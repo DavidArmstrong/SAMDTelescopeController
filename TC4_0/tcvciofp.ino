@@ -2,10 +2,6 @@
 // Telescope Controller 4.0 - Basic I/O
 #include "tcheader.h"
 
-int FtoS(double f) { return (int)f; }
-
-long FtoD(double f) { return (long)f; }
-
 char KEY() { // return a character of input from any source
   char n = ' ';
   long xnL;
@@ -196,8 +192,6 @@ void RESETREFRACTFLAG() { RFLAG = false; }
 boolean REFRACTquestion() { return RFLAG; }
 void SETERRFLAG() { ERRFLAG = true; }
 void RESETERRFLAG() { ERRFLAG = false; }
-boolean USERRquestion() { return ERRFLAG; }
-boolean FORKquestion() { return EMOUNTFLAG; }
 
 
 // (This was lifted from a web blog - somewhere, then heavily modified)
@@ -236,103 +230,9 @@ int ACCEPT(char *buf, int limit) {
   }
 }
 
-// Replace this with RDLBTN()
-//boolean HSIG() {
-  // return flag of Lock button status
-//  return digitalRead(LOCKBTN);
-//}
-
-boolean EQquestion() {
-  //Equatorial mount flag
-  // 0 = AltAz, 8 = Equatorial mount
-  return EQUflag;
-}
-
-void MTRSON (int azdir, long Dtraaz, long Dtdecal) { // Turn on motors towards target
-  
-}
-
-void ZEROAZ(long Dzraaz) {
-  // Reset Azimuth counter
-  RAAZ = RAAZenc.read();
-  RAAZ -= Dzraaz;
-  if (RAAZ < 0) RAAZ += MRAAZ;
-  RAAZenc.write(RAAZ);
-}
-
-void RDAZAL() {
-  // Return current AZimuth, ALtitude
-  RAAZ = RAAZenc.read();
-  DECAL = DECALenc.read();
-}
-
-long ITAZAL(long Drraaz, long Drdecal, boolean eqflag) {
-  //Initialize AZimuth, ALtitude counters
-  //( Drraaz/Drdecal/eqflag - Dmraaz/Dmdecal/Deqlat )
-  // MRAAZ = Maximum encoder counts in RA/Azimuth ( 3 bytes each )
-  // MDECAL = Maximum encoder counts in Declination/Altitude
-  EQFLAG = eqflag;
-  if (NOLIM)
-    return INOLIM(Drraaz, Drdecal);
-  else
-    return ITAZALwithLIM(Drraaz, Drdecal);
-}
-
-long INOLIM(long Drraaz, long Drdecal) {
-  
-  return 0L;
-}
-
-long ITAZALwithLIM(long Drraaz, long Drdecal) {
-  TURNAZ = 0;
-  TURNAL = TURNAZ;
-  RAAZ = 0L; //Will stop with scope at limit=position 0
-  TDECAL = RAAZ; //Goto Horizon first
-  //Make target position ridiculously high for Azimuth
-  MRAAZ = 0xFFFFFFFFL; //Assume max number of encoder counts
-  MDECAL = MRAAZ;
-  DECAL = MDECAL; //Assume current Alt. high
-  TRAAZ = DECAL; //Target AZ = max counts
-  //Output message of where we're going
-  if (EQquestion()) {
-    const char* tmp = "RA Meridian  ";
-    LCDline1();
-    TCterminal.println(tmp);
-    LCDprint(tmp);
-  } else {
-    const char* tmp = "Aximuth Start  ";
-    LCDline1();
-    TCterminal.println(tmp);
-    LCDprint(tmp);
-  }
-
-  
-  return 0L;
-}
-
-boolean KYSTAT() {
-  // Return status of char availability
-  return CHKNUM();
-}
-
-int GETZONE() {
-  return TZONE;
-}
-
 boolean RDLBTN() {
   //return Lock button status
   return !digitalRead(LOCKBTN); //!RBTN(n);
-}
-
-void SETIME(long dtime) {
-  //update seconds time count
-  TIMER = dtime - rtczero.getSeconds();
-//  SETRTC();
-}
-
-long RDTIME() {
-  //Return time in seconds
-  return TIMER + rtczero.getSeconds();
 }
 
 void alarmMatch() {
@@ -342,15 +242,17 @@ void alarmMatch() {
 
 void TERMLINEUP() {
   // Moves up one line on a serial display
-  TCterminal.write(0x1b); // esc
-  TCterminal.write(0x5b); // [
-  TCterminal.write(0x41); // A
+  //TCterminal.write(0x1b); // esc
+  //TCterminal.write(0x5b); // [
+  //TCterminal.write(0x41); // A
+  ansi.cursorUp(1);
 }
 
 void TERMclear() {
   TCterminal.print(" ");
   newdelay(500);
   //Clear VT100 screen and home cursor
+  /*
   TCterminal.write(0x1b); // esc
   TCterminal.write(0x5b); // [
   TCterminal.write(0x48); // H - Go to home position
@@ -358,6 +260,8 @@ void TERMclear() {
   TCterminal.write(0x5b); // [
   TCterminal.write(0x32); // 2
   TCterminal.write(0x4a); // J - Clear the screen
+  */
+  ansi.clearScreen();
 }
 
 void TERMcursor() {
@@ -371,12 +275,15 @@ void TERMcursor() {
 void TERMxy(int x, int y) {
   newdelay(40); // Serialx has a small Tx buffer
   // Position cursor on VT100 screen at coordinates x,y
+  /*
   TCterminal.write(0x1b); // esc
   TCterminal.write(0x5b); // [
   TCterminal.print(y); // vertical
   TCterminal.write(0x3b); // ; or semi-colon
   TCterminal.print(x); // horizontal
   TCterminal.write(0x48); // H - Go to x,y position
+  */
+  ansi.gotoXY(y,x);
 }
 
 void TERMtextcolor( char buf ) {
@@ -433,98 +340,3 @@ boolean CHKNUM() {
   return flag;
 }
 
-void Fdot(double f) {
-  TCterminal.print(f, 2);
-  LCDprint(f, 2);
-}
-
-int ds1307_read( int address ) {
-  // Read a byte from RAM
-  if (address < 8 || address > 0x3f) return 0xff;
-  Wire.beginTransmission(DS1307_ADR);
-  Wire.write(address);
-  Wire.endTransmission();
-
-  Wire.requestFrom(DS1307_ADR, (uint8_t) 1);
-  
-  return Wire.read();
-}
-
-void ds1307_write( int address, int value ) {
-  // Write a byte to RAM
-  if (address < 8 || address > 0x3f) return;
-  Wire.beginTransmission(DS1307_ADR);
-  Wire.write(address);
-  Wire.write(value);
-  Wire.endTransmission();
-}
-/* We now deal with EEPROM as a structure - read/write all at once
-byte CatCLK(int eeaddress) {
-  //Read byte value from EEPROM
-  Wire.beginTransmission(EEPROM_ADR);
-  Wire.write((int)(eeaddress >> 8)); // MSB
-  Wire.write((int)(eeaddress & 0xFF)); // LSB
-  Wire.endTransmission();
-
-  Wire.requestFrom(EEPROM_ADR, 1);
-  byte rdata = 0xFF;
-  if (Wire.available()) rdata = Wire.read();
-  return rdata;
-}
-
-int atCLK(int eeaddress) {
-  //Read word value from EEPROM
-  int msb = CatCLK(eeaddress);
-  int lsb = CatCLK(eeaddress + 1);
-  return (msb << 8) & lsb;
-}
-
-void CstoreCLK (byte data, int eeAddress) {
-  // write byte data into EEPROM at addr
-  Wire.beginTransmission(EEPROM_ADR);
-  Wire.write((int)(eeAddress >> 8)); // MSB
-  Wire.write((int)(eeAddress & 0xFF)); // LSB
-
-  //Write byte to EEPROM
-  Wire.write(data); //Write the data
-  Wire.endTransmission(); //Send stop condition
-}
-
-void storeCLK (int data, int eeAddress) {
-  // write word data into EEPROM at addr
-  Wire.beginTransmission(EEPROM_ADR);
-  Wire.write((int)(eeAddress >> 8)); // MSB
-  Wire.write((int)(eeAddress & 0xFF)); // LSB
-
-  //Write bytes to EEPROM
-  byte LSB = data & 0xFF;
-  byte MSB = (data & 0xFF00) >> 8;
-  Wire.write(MSB); //Write the data
-  Wire.write(LSB); //Write the data
-  Wire.endTransmission(); //Send stop condition
-}
-
-long threeBatCLK(int eeaddress) {
-  // return 3 byte contents in EERPOM starting at addr
-  int msb = CatCLK(eeaddress);
-  int mid = CatCLK(eeaddress + 1);
-  int lsb = CatCLK(eeaddress + 2);
-  return (msb << 16) & (mid << 8) & lsb;
-}
-
-void threeBstoreCLK(long data, int eeAddress) {
-  // Write long data into EEPROM at addr as three bytes
-  Wire.beginTransmission(EEPROM_ADR);
-  Wire.write((int)(eeAddress >> 8)); // MSB
-  Wire.write((int)(eeAddress & 0xFF)); // LSB
-
-  //Write bytes to EEPROM
-  byte LSB = data & 0xFF;
-  byte middleSB = (data & 0x00FF00) >> 8;
-  byte MSB = (data >> 16) & 0xFF;
-  Wire.write(MSB); //Write the data
-  Wire.write(middleSB); //Write the data
-  Wire.write(LSB); //Write the data
-  Wire.endTransmission(); //Send stop condition
-}
-*/

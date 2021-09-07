@@ -2,104 +2,40 @@
 // Telescope Controller 4.0 - Derived I/O functions
 #include "tcheader.h"
 
-void twoCR() { TCterminal.println("\n"); }
+void printDegMinSecs(double n) {
+  boolean sign = (n < 0.);
+  if (sign) n = -n;
+  long lsec = n * 360000.0;
+  long deg = lsec / 360000;
+  long min = (lsec - (deg * 360000)) / 6000;
+  float secs = (lsec - (deg * 360000) - (min * 6000)) / 100.;
+  if (sign) TCterminal.print("-");
+  if (abs(deg) < 10) { TCterminal.print("0"); }
+  TCterminal.print(deg); TCterminal.print(":");
+  if (abs(min) < 10) { TCterminal.print("0"); }
+  TCterminal.print(min); TCterminal.print(":");
+  if (abs(secs) < 10) { TCterminal.print("0"); }
+  TCterminal.print((int)abs(secs)); TCterminal.print(" ");
+}
 
-long GETIME( long* addr ) { // returns long type seconds
-  // address of double # of seconds var
-  long tmp = RDTIME();
-  long lstoffset = 0L;
-  if ( addr == &LST ) {
-    // get seconds since then
-    lstoffset = (tmp / 365L);
-    // add seconds for correct LST
+void printTime(double n) {
+  boolean sign = (n < 0.);
+  if (sign) n = -n;
+  long lsec = n * 3600.0;
+  long deg = lsec / 3600;
+  long min = (lsec - (deg * 3600)) / 60;
+  float secs = (lsec - (deg * 3600) - (min * 60));
+  //if (sign) TCterminal.print("-");
+  print2digitsUSB(deg); TCterminal.print(":");
+  print2digitsUSB(min); TCterminal.print(":");
+  print2digitsUSB(abs(secs)); TCterminal.print(" ");
+}
+
+void print2digitsUSB(int number) {
+  if (number < 10) {
+    TCterminal.print("0");
   }
-  if ( addr == &LT) {
-    // Take DST into account for Local Time
-    lstoffset = (DSTFLAG?1:0) * 3600L;
-  }
-  return *addr + tmp + lstoffset;
-}
-
-void TIME( long* addr, int* days, int* hours, int* minutes, int* seconds ) {
-  // returns sec/min/hrs/days
-  long tmp = GETIME( addr );
-  *seconds = tmp % 60L; //rem=sec, dquot=min
-  *minutes = (tmp / 60L) % 60L; //rem=min, dquot=hrs
-  *hours = (tmp / 3600L) % 24L; //rem=mins, quot=hrs
-  *days = tmp / 86400L; //rem=hrs, quot=days
-}
-
-void DATEFIX() {
-boolean flag;
-byte updatednumofdays, monthdays;
-int days, hours, minutes, seconds;
-// Correct date variables for elapsed time
-GRDAY = GBDAY;
-GRMONTH = GBMONTH;
-GRYEAR = GBYEAR;
-TIME ( &UT, &days, &hours, &minutes, &seconds ); // sets sec/min/hrs/days
-if ( days != 0 ) {
-  // at least one extra day needs to be taken into account
-  updatednumofdays = GRDAY + days;
-  do { // keep looping until new days fit into month
-    // check for leap year now
-    flag = (((GRYEAR % 4) == 0) && (GRYEAR % 100)) || ((GRYEAR % 400) == 0);
-    // 0 for normal year, 1 for leap year
-    if (flag) { // Leap year
-      monthdays = MONTHDAYS[GRMONTH + 13];
-    } else {
-      monthdays = MONTHDAYS[GRMONTH];
-    }
-    if (monthdays < updatednumofdays) {
-      updatednumofdays -= monthdays; // subtract off month of days
-      GRMONTH += 1; // increment month #
-      if (GRMONTH == 13 ) {
-        GRMONTH = 1; // Month goes back to January
-        GRYEAR += 1; // increment year
-      }
-      flag = FALSEFLAG; // be sure to loop again
-    } else {
-      flag = TRUEFLAG; // okay to exit loop structure
-    }
-  } while ( !flag );
-  GRDAY = updatednumofdays; // store updated day
-}
-}
-
-int UTYEAR() { DATEFIX(); return GRYEAR ; }
-byte UTMONTH() { DATEFIX(); return GRMONTH ; }
-byte UTDAY() { DATEFIX(); return GRDAY ; }
-
-void DISTIME( long* n ) { // n is address of double # of seconds )
-  int days, hours, minutes, seconds;
-  TIME(n, &days, &hours, &minutes, &seconds);
-  if (hours < 10) { TCterminal.print("0"); }
-  TCterminal.print(hours); TCterminal.print(":");
-  if (minutes < 10) { TCterminal.print("0"); }
-  TCterminal.print(minutes); TCterminal.print(":");
-  if (abs(seconds) < 10) { TCterminal.print("0"); }
-  TCterminal.print(abs(seconds));
-}
-
-void FDISPLAYDMS( double f ) {
-  // display f in rad in +deg.mn.sc format
-  double ffabs, fsecs;
-  long dhours, dmin, dsecs;
-  fsecs = F360div2PI * f; // f in seconds
-  //TCterminal.print(fsecs); while(1) ;
-  ffabs = fabs(fsecs);
-  dsecs = (long)ffabs;
-  dhours = dsecs / 3600L;
-  dmin = (dsecs / 60L) - (dhours * 60L);
-  dsecs = dsecs - (dmin * 60L) - (dhours * 3600L);
-  if (fsecs < 0.0) TCterminal.print("-");
-  TCterminal.print(dhours);
-  TCterminal.print(".");
-  if (dmin < 10) { TCterminal.print("0"); }
-  TCterminal.print((dmin));
-  TCterminal.print(".");
-  if (dsecs < 10) { TCterminal.print("0"); }
-  TCterminal.print((dsecs));
+  TCterminal.print(number);
 }
 
 boolean TRPLCMP( int n1, int n2, int n3, int n4 ) {
@@ -117,22 +53,6 @@ boolean GETYORN() { // True for Yes, False for No
   } while ( !flag );
   EMIT(n); // echo good input
   return TRPLCMP('Y', '1', 'y', n);
-}
-
-boolean HUNTquestion( int n ) {
- return TRPLCMP(0x48, 0x68, 0x4A, n); // H or J?
-}
-
-boolean DEFAULTquestion( int n ) {
- return TRPLCMP(ENTER, 0x64, 0x44, n); // <enter> or D?
-}
-
-boolean SKIPquestion( int n ) {
- return TRPLCMP(0x53, 0x73, 0x08, n); // S or backspace?
-}
-
-boolean INPUTquestion( int n ) {
-  return TRPLCMP(0x49, 0x69, 0x50, n); // I or P?
 }
 
 long GETDDECNUM() {
@@ -216,34 +136,3 @@ double GETFDECNUM() {
   return atof(PAD);
 }
 
-void readsensors() {
-  //Update environment status
-  if (BMEpresent) {
-    FTEMPF = bme280.readTempF();
-    FHUMID = bme280.readFloatHumidity();
-    FPINHG = (bme280.readFloatPressure() * 0.0002953);
-    FHEIGHT = bme280.readFloatAltitudeFeet();
-  }
-  if (GPSpresent) {
-    FALTEMP = eecharbuf.strunion.ELEVATION = ubloxGPS.getAltitude() * 3.28084 / 1000.; //Elevation in feet
-  }
-  if (MagCompasspresent) {
-    //HMC6352.Wake();
-    //newdelay(10);
-    FMAGHDG = HMC6352.GetHeading();
-    //HMC6352.Sleep();
-  }
-  if (eecharbuf.strunion.INA219flag) { // Voltage monitor
-    float shuntvoltage = 0;
-    float busvoltage = 0;
-    //float current_mA = 0;
-    float loadvoltage = 0;
-    //float power_mW = 0;
-
-    shuntvoltage = ina219.getShuntVoltage_mV();
-    busvoltage = ina219.getBusVoltage_V();
-    //current_mA = ina219.getCurrent_mA();
-    //power_mW = ina219.getPower_mW();
-    busvolts = loadvoltage = busvoltage + (shuntvoltage / 1000);
-  }
-}

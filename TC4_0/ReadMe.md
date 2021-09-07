@@ -1,9 +1,6 @@
-# Arduino SAMD-based Telescope Controller 4.00.00
-
+Arduino SAMD-based Telescope Controller 4.00.00
 By David Armstrong, 2020
-
 =============================
-
 If you are here, you are at least interested.  Quickest way for you to see a demo:
 
 0. DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
@@ -29,7 +26,6 @@ At this point, you can start playing with the software with just the Turbo board
 This let's you see how the software works, at least from a Terminal program.  
 
 ==========================
-
 Once you've checked out the program, you can then decide if you want to proceed with
 adding hardware to make it function with your telescope.  Here's the recommended order 
 to add stuff: (Gory details are listed later in this doc.)
@@ -84,8 +80,9 @@ I2C Magnetic Compass (HMC6352 IIC address 0x21) OR (HMC6343 IIC address 0x19)
 9. Account for mechanical level of telescope:
 (Portable systems can benefit from this option.  Permanently mounted telescopes should be
 mounted properly anyway, which makes this unnecessary.  See #12 below.)
-Murata SPI inclinometer - for an Alt-Azimuth base for level determination
+Murata SCL3300 SPI inclinometer - for an Alt-Azimuth base for level determination
 (pins 22,23,24 on ICSP header, and Chip Select Pin 10 )
+Note: Add a second SCL3300, mounted on the telescope tube, for Altitude control.
 
 10. Separate Status display, just because I think it's cool:
 I2C OLED display (IIC address 0x3c)
@@ -108,9 +105,7 @@ Now if you have ALL that, then zero alignment stars are needed to set up the sys
 for an observing session.  In fact, it becomes zero alignment, period.  Just turn it on, let it do its setup, and tell it where to go.
 
 ======================================
-
-# Gory Detailed Hardware Information
-
+Gory Detailed Hardware Information:
 For this system, the hardware listed below is assumed as being used.  Some substitutions
 are possible, but the code might have to be changed accordingly.
 Do your homework.
@@ -129,29 +124,21 @@ They have encoders and connecting cables too.  (or 'roll your own')
 And to connect the encoders cable to the Turbo, use an RJ45 jack: https://www.sparkfun.com/products/716 and https://www.sparkfun.com/products/643
 
 Various I2C (QWIIC) devices:  https://www.sparkfun.com/qwiic
-
 GPS: https://www.sparkfun.com/products/15210 or for higher accuracy in RTK mode: https://www.sparkfun.com/products/15005 or https://www.sparkfun.com/products/15136
-
 EEPROM: https://www.sparkfun.com/products/525 or https://www.sparkfun.com/products/14764
-
 BME280 Barometric pressure/temperature sensor: https://www.sparkfun.com/products/13676 or https://www.sparkfun.com/products/14348 or the latest at https://www.sparkfun.com/products/15440 (QWIIC version - recommended)
-
 Magnetic Compass: (Old) https://www.sparkfun.com/products/retired/7915 or you might instead try the newer version at: https://www.sparkfun.com/products/12916 (more expensive, more accurate)
-
 https://www.digikey.com/product-detail/en/sparkfun-electronics/SEN-12916/1568-1557-ND/5764505
-
 MicroOLED display: https://www.sparkfun.com/products/14532
-
 Battery Current/Voltage Measurement: https://www.sparkfun.com/products/15176
-
 Motor Driver: https://www.sparkfun.com/products/13911 (older version)
 or https://www.sparkfun.com/products/15451 (newer version)
 
 For the optional 4x20 LCD display, I use the older PIC based one:
 https://www.sparkfun.com/products/9568
-
-Or One could substitute the newer one which can be used via the UART or I2C interfaces:
+Or one could substitute one of the newer ones which can be used via the UART or I2C interfaces:
 4x20 SerLCD/OpenLCD display: https://www.sparkfun.com/products/14074
+QWIIC version: https://www.sparkfun.com/products/16398
 
 IR detector - for use with an IR remote with backlit keypad: https://www.sparkfun.com/products/10266 or https://www.sparkfun.com/products/retired/8554 ( I bought this years ago because I knew I would use it for this project.)
 You choose the IR remote yourself.  I've seen them on Amazon, and Wally-World has it too.
@@ -159,59 +146,40 @@ You choose the IR remote yourself.  I've seen them on Amazon, and Wally-World ha
 And just for kicks and giggles, because I despise having to find alignment stars:
 SPI Murata SCL3300-D01-1 inclinometer: https://www.mouser.com/ProductDetail/Murata-Electronics/SCL3300-D01-PCB?qs=vLWxofP3U2yrcJsOYvcWaQ%3D%3D
 https://www.digikey.com/product-detail/en/murata-electronics-north-america/SCL3300-D01-10/490-18218-1-ND/9950619
-
-Note: Without it, one is left with having to manually level the telescope every single time it's set up.  I've done that enough now.
+Note: Yeah, it's a pricey little item.  But without it, one is left with having to manually level the telescope every single time it's set up.  I've done that enough now.
 
 ====================================
-
-# Software
-(Only needed if you want to compile, modify, and/or hork the system.)
+Software: (Only needed if you want to compile, modify, and/or hork the system.)
 
 You MUST set up the Arduino IDE precisely as listed on the Sparkfun Turbo Hookup Guide: https://learn.sparkfun.com/tutorials/redboard-turbo-hookup-guide
 (This includes versions listed for the SAMD libraries, etc.)
 
-# Arduino Libraries
+Arduino Libraries:
 RTCZero by Arduino https://www.arduino.cc/en/Reference/RTC
-
 Adafruit INA219 by Adafruit https://github.com/adafruit/Adafruit_INA219
-
-Encoder by Paul Stoffregen https://www.pjrc.com/teensy/td_libs_Encoder.html
-
 extEEPROM by Jack Christensen https://github.com/PaoloP74/extEEPROM
-
 IRremote by shiffiff https://github.com/z3t0/Arduino-IRremote
-
-Serial Controlled Motor Driver by Sparkfun Electronics https://github.com/sparkfun/Serial_Controlled_Motor_Driver
-
 Sparkfun BME280 by Sparkfun Electronics https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
-
 Sparkfun Micro OLED Breakout by Sparkfun Electronics https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
-
 Sparkfun Ublox Arduino Library by Sparkfun Electronics http://librarymanager/All#SparkFun_Ublox_GPS
+Murata SCL3300 Library https://github.com/DavidArmstrong/Arduino-SCL3300
 
-# Other Libraries
-Old Magnetic Compass: https://github.com/funflin/HMC6352-Arduino-Library
-
-New Magnetic Compass: https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
-
+Other Libraries:
 Math: https://www.arduino.cc/en/math/h
 
 EEPROM hookup guide: https://learn.sparkfun.com/tutorials/reading-and-writing-serial-eeproms
-
 Serial Enabled LCD hookup guide: https://learn.sparkfun.com/tutorials/pic-based-serial-enabled-character-lcd-hookup-guide
 --> http://playground.arduino.cc/Code/SerLCD
-
 QWIIC Serial Enabled LCD hookup guide: https://learn.sparkfun.com/tutorials/avr-based-serial-enabled-lcds-hookup-guide
 --> The SparkFun SerLCD Arduino library can be downloaded with the Arduino library manager by searching 'SparkFun SerLCD'
 
 ====================================
-
-# Bibliography
-(Just to prove that I did MY homework.)
+Bibliography:  (Just to prove that I did MY homework.)
 
 1. Van Flandern, T. C. and K. F. Pulkkinen. "Low-Precision Formulae For
 Planetary Positions."   The Astrophysical Journal Supplement Series,
 Vol. 41, November 1979, P. 391-411
+http://adsabs.harvard.edu/full/1979ApJS...41..391V
 
 2. The Astronomical Almanac. Washington D. C.:
 U. S. Government Printing Office. (There is an edition for each year.)
@@ -248,9 +216,7 @@ D. (Ed.)
 13. Celestial Objects Online Database: http://www.astronexus.com/hyg and https://github.com/astronexus/HYG-Database
 
 ====================================
-
-# History
-(Why is this Version 4?)
+History:  (Why is this Version 4?)
 
 Version 1.0 began on that wide computer paper in 1982.  The initial
 hardware was built in 1983, using a 6809 CPU at 1 MHz and 2K RAM with
@@ -267,11 +233,13 @@ That, and the fact that my development tools would not now work under
 Windows 10, meant I could either try rewriting my tools, or go to 
 'something else'.  Several attempts at updating my Visual C++ IDE ended 
 in extreme frustration.  (Thank you Microsoft!)  It was time for 'something else'.
+
 Version 4.0 was decided on when I got my hands on a Sparkfun Redboard Turbo.
 I'd always thought the Arduino line of stuff wasn't up to the task, but
 this board proved me wrong.  It had real dev tools.  And it had a lot of
 libraries that were tested and extensive.  Software tool availability
 often ends up determining what hardware will be used for a system.
+And with that, I started to have fun again developing this system.
 
 You will notice a lot of 'caps' in the current source.  That's because the
 Arduino code is a translation of the original FIG-Forth code, which had a 
