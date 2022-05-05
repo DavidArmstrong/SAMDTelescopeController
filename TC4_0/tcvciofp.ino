@@ -8,39 +8,44 @@ char KEY() { // return a character of input from any source
   boolean rcvd = false;
 
   do {
-  if (TCterminal.available()) {
-    n = TCterminal.read();
-    rcvd = true;
-  } else {
-    if (TC_LCD.available()) {
-      n = TC_LCD.read();
+    if (TCterminal.available()) {
+      n = TCterminal.read();
       rcvd = true;
     } else {
-      xnL = 0L;
-      if (irsetup && (IRkey != 0L)) {
-        // we have already read a key
-        xnL = IRkey;
-        IRkey = 0L;
+      if (TC_LCD.available()) {
+        n = TC_LCD.read();
+        rcvd = true;
       } else {
-        if (irrecv.decode(&results)) {
-          xnL = results.value;
-          if (xnL == 0xffffffffL) xnL = 0L;
-          irrecv.resume(); // Receive the next value
+        xnL = 0L;
+        if (irsetup && (IRkey != 0L)) {
+          // we have already read a key
+          xnL = IRkey;
+          IRkey = 0L;
+        } else {
+          // Used to use: irrecv.decode(&results)
+          xnL = 0L;
+          /*
+          if (irrecv.decode()) {
+            //xnL = results.value;
+			xnL = irrecv.results.value;
+            if (xnL == 0xffffffffL) xnL = 0L;
+            irrecv.resume(); // Receive the next value
+          }
+          // */
         }
-      }
-      
-      if (irsetup && (xnL != 0L)) {
-        // Return an IR input char if IR Table has been initialized
-        for (int i=0; i < 20; i++) {
-          if ((rcvd == false) && (xnL == eecharbuf.strunion.IRinput[i])) {
-            n = eecharbuf.strunion.IRchar[i];
-            rcvd = true;
-            //break;
+
+        if (irsetup && (xnL != 0L)) {
+          // Return an IR input char if IR Table has been initialized
+          for (int i = 0; i < 20; i++) {
+            if ((rcvd == false) && (xnL == eecharbuf.strunion.IRinput[i])) {
+              n = eecharbuf.strunion.IRchar[i];
+              rcvd = true;
+              //break;
+            }
           }
         }
       }
     }
-  }
   } while (rcvd == false);
   return n;
 }
@@ -62,7 +67,7 @@ void LCDline1() { // move cursor to beginning of first line
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag) {
     TC_LCD.write(254); //Send command character
-TC_LCD.write(128); //Change the position (128) of the cursor to 1st row (0), position 0
+    TC_LCD.write(128); //Change the position (128) of the cursor to 1st row (0), position 0
   }
 }
 
@@ -74,7 +79,7 @@ void LCDline2() { // move cursor to beginning of second line
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag) {
     TC_LCD.write(254); //Send command character
-TC_LCD.write(128 + 64); //Change the position (128) of the cursor to 2nd row (64), position 0
+    TC_LCD.write(128 + 64); //Change the position (128) of the cursor to 2nd row (64), position 0
   }
 }
 
@@ -86,7 +91,7 @@ void LCDline3() { // move cursor to beginning of third line
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag) {
     TC_LCD.write(254); //Send command character
-TC_LCD.write(128 + 20); //Change the position (128) of the cursor to 3rd row (20), position 0
+    TC_LCD.write(128 + 20); //Change the position (128) of the cursor to 3rd row (20), position 0
   }
 }
 
@@ -98,7 +103,7 @@ void LCDline4() { // move cursor to beginning of fourth line
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag) {
     TC_LCD.write(254); //Send command character
-TC_LCD.write(128 + 84); //Change the position (128) of the cursor to 4th row (84), position 0 (0)
+    TC_LCD.write(128 + 84); //Change the position (128) of the cursor to 4th row (84), position 0 (0)
   }
 }
 
@@ -121,6 +126,16 @@ void LCDclear() { // Clear display and home cursor
 }
 
 void LCDprint(int tmp) { // Print to LCD
+  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+    Wire.beginTransmission(LCDi2c_ADR);
+    Wire.print(tmp);
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDpicflag) {
+    TC_LCD.print(tmp);
+  }
+}
+
+void LCDprint(long tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
@@ -170,42 +185,97 @@ void LCDprint(const char* tmp) { // Print to LCD
   }
 }
 
-void SETINITFLAG() { INITFLAG = true; }
-void RESETINITFLAG() { INITFLAG = false; }
-boolean NOTINITquestion() { return !INITFLAG; }
-void SETIMEFLAG() { TIMEFLAG = true; }
-void RESETIMEFLAG() { TIMEFLAG  = false; }
-boolean NOTIMESETquestion() { return !TIMEFLAG; }
-boolean INITCOMMANDquestion() { return INITCMD == COMMAND; }
-boolean TIMECOMMANDquestion() { return SETIMECMD == COMMAND; }
-void SETIRFLAG() { IRFLAG = true; }
-void RESETIRFLAG() { IRFLAG = false; }
-boolean IRquestion() { return !IRFLAG; }
-void SETTCIFLAG() { TCIFLAG = true; }
-void RESETTCIFLAG() { TCIFLAG = false; }
-boolean TCIquestion() { return !TCIFLAG; }
-void SETPRECESSFLAG() { PFLAG = true; }
-void RESETPRECESSFLAG() { PFLAG = false; }
-boolean PRECESSquestion() { return PFLAG; }
-void SETREFRACTFLAG() { RFLAG = true; }
-void RESETREFRACTFLAG() { RFLAG = false; }
-boolean REFRACTquestion() { return RFLAG; }
-void SETERRFLAG() { ERRFLAG = true; }
-void RESETERRFLAG() { ERRFLAG = false; }
+void SETINITFLAG() {
+  INITFLAG = true;
+}
+void RESETINITFLAG() {
+  INITFLAG = false;
+}
+boolean NOTINITquestion() {
+  return !INITFLAG;
+}
+void SETIMEFLAG() {
+  TIMEFLAG = true;
+}
+void RESETIMEFLAG() {
+  TIMEFLAG  = false;
+}
+boolean NOTIMESETquestion() {
+  return !TIMEFLAG;
+}
+boolean INITCOMMANDquestion() {
+  return INITCMD == COMMAND;
+}
+boolean TIMECOMMANDquestion() {
+  return SETIMECMD == COMMAND;
+}
+void SETIRFLAG() {
+  IRFLAG = true;
+}
+void RESETIRFLAG() {
+  IRFLAG = false;
+}
+boolean IRquestion() {
+  return !IRFLAG;
+}
+void SETTCIFLAG() {
+  TCIFLAG = true;
+}
+void RESETTCIFLAG() {
+  TCIFLAG = false;
+}
+boolean TCIquestion() {
+  return !TCIFLAG;
+}
+void SETdisplayFLAG() {
+  displayFLAG = true;
+}
+void RESETdisplayFLAG() {
+  displayFLAG = false;
+}
+boolean Displayquestion() {
+  return !displayFLAG;
+}
+void SETPRECESSFLAG() {
+  PFLAG = true;
+}
+void RESETPRECESSFLAG() {
+  PFLAG = false;
+}
+boolean PRECESSquestion() {
+  return PFLAG;
+}
+void SETREFRACTFLAG() {
+  RFLAG = true;
+}
+void RESETREFRACTFLAG() {
+  RFLAG = false;
+}
+boolean REFRACTquestion() {
+  return RFLAG;
+}
+void SETERRFLAG() {
+  ERRFLAG = true;
+}
+void RESETERRFLAG() {
+  ERRFLAG = false;
+}
 
 
-// (This was lifted from a web blog - somewhere, then heavily modified)
-//    int len;
-//    char buffer[32];
-//    Serial.print ("\r\nPlease type something: ");
-//    len = ACCEPT (buffer, 32);
+/* (This was lifted from a web blog - somewhere, then heavily modified)
+  //    int len;
+  //    char buffer[32];
+  //    Serial.print ("\r\nPlease type something: ");
+  //    len = ACCEPT (buffer, 32); */
 int ACCEPT(char *buf, int limit) {
   // read a line from input into buffer, return char count
   int x;
   int ptr = 0;
   *buf = 0;
 
-  for (x = 0; x < limit; x++) { buf[x] = 0; }
+  for (x = 0; x < limit; x++) {
+    buf[x] = 0;
+  }
   while (1) {
     x = KEY();
     if (x == 0x0D) { // cr == end of line
@@ -235,31 +305,18 @@ boolean RDLBTN() {
   return !digitalRead(LOCKBTN); //!RBTN(n);
 }
 
-void alarmMatch() {
-  // Increment seconds counter at the one minute mark
-  TIMER += 60L;
-}
-
-void TERMLINEUP() {
-  // Moves up one line on a serial display
-  //TCterminal.write(0x1b); // esc
-  //TCterminal.write(0x5b); // [
-  //TCterminal.write(0x41); // A
-  ansi.cursorUp(1);
-}
-
 void TERMclear() {
   TCterminal.print(" ");
-  newdelay(500);
+  //newdelay(500);
   //Clear VT100 screen and home cursor
   /*
-  TCterminal.write(0x1b); // esc
-  TCterminal.write(0x5b); // [
-  TCterminal.write(0x48); // H - Go to home position
-  TCterminal.write(0x1b); // esc
-  TCterminal.write(0x5b); // [
-  TCterminal.write(0x32); // 2
-  TCterminal.write(0x4a); // J - Clear the screen
+    TCterminal.write(0x1b); // esc
+    TCterminal.write(0x5b); // [
+    TCterminal.write(0x48); // H - Go to home position
+    TCterminal.write(0x1b); // esc
+    TCterminal.write(0x5b); // [
+    TCterminal.write(0x32); // 2
+    TCterminal.write(0x4a); // J - Clear the screen
   */
   ansi.clearScreen();
 }
@@ -273,17 +330,17 @@ void TERMcursor() {
 }
 
 void TERMxy(int x, int y) {
-  newdelay(40); // Serialx has a small Tx buffer
+  newdelay(20); // Serialx has a small Tx buffer
   // Position cursor on VT100 screen at coordinates x,y
   /*
-  TCterminal.write(0x1b); // esc
-  TCterminal.write(0x5b); // [
-  TCterminal.print(y); // vertical
-  TCterminal.write(0x3b); // ; or semi-colon
-  TCterminal.print(x); // horizontal
-  TCterminal.write(0x48); // H - Go to x,y position
+    TCterminal.write(0x1b); // esc
+    TCterminal.write(0x5b); // [
+    TCterminal.print(y); // vertical
+    TCterminal.write(0x3b); // ; or semi-colon
+    TCterminal.print(x); // horizontal
+    TCterminal.write(0x48); // H - Go to x,y position
   */
-  ansi.gotoXY(y,x);
+  ansi.gotoXY(y, x);
 }
 
 void TERMtextcolor( char buf ) {
@@ -306,13 +363,18 @@ void TERMtextcolor( char buf ) {
 
 void WAITASEC(int n) {
   // Wait until the next second tick
-  long initialTime = rtczero.getSeconds();
+  DateTime now = rtczero.now();
+  //long initialTime = rtczero.getSeconds();
+  long initialTime = now.second();
 
   for (int x = 0; x < n; x++) {
-    while (initialTime == rtczero.getSeconds()) {
-      ; //Wait
+    now = rtczero.now();
+	  //while (initialTime == rtczero.getSeconds()) {;}
+    while (initialTime == now.second()) {
+      now = rtczero.now();
     }
-    initialTime == rtczero.getSeconds();
+    //initialTime == rtczero.getSeconds();
+	  initialTime = now.second();
   }
 }
 
@@ -330,13 +392,71 @@ void newdelay( long interval ) {
 }
 
 boolean CHKNUM() {
-  //Check for number between 0 and $20
-  if (irrecv.decode(&results)) {
-    IRkey = results.value;
+  //Check for a key press, somewhere
+  // Used to use: irrecv.decode(&results)
+  IRkey = 0L;
+  /*
+  if (irrecv.decode()) {
+    //IRkey = results.value;
+	IRkey = irrecv.results.value;
     if (IRkey == 0xffffffffL) IRkey = 0L;
     irrecv.resume(); // Receive the next value
   }
+  // */
   boolean flag = TCterminal.available() || TC_LCD.available() || (IRkey != 0L);
   return flag;
 }
 
+boolean getMagCompassPresent() {
+  return MagCompasspresent;
+}
+
+float magneticDeclination(float Latitude, float Longitude, uint8_t year, uint8_t month, uint8_t day) {
+  float declination; // magnetic variation from True North
+  declination = myDeclination.magneticDeclination(Latitude, Longitude, year, month, day);
+  spData.declination = declination;
+  return declination;
+}
+
+float getMagCompassHeading() {
+  float FMAGHDG;
+  HMC6352.Wake();
+  newdelay(10);
+  FMAGHDG = HMC6352.GetHeading();
+  HMC6352.Sleep();
+  return FMAGHDG;
+}
+
+boolean getDistanceSensorPresent() {
+  RFD77402present = false;
+  //if (tubeDistance.begin() == true) {
+    // TCterminal.println("RFD77402 Distance Sensor detected.");
+  //  RFD77402present = true;
+  //}
+  return RFD77402present;
+}
+
+unsigned int getDistanceSensor() {
+  unsigned int distance = 0;
+  //byte errorCode = tubeDistance.takeMeasurement();
+  //if (errorCode == CODE_VALID_DATA) {
+  //  distance = tubeDistance.getDistance();
+  //}
+  return distance;
+}
+
+boolean getRockerTiltPresent() {
+  return rockerTiltPresent;
+}
+
+boolean getTubeTiltPresent() {
+  return tubeTiltPresent;
+}
+
+double getAltitude() {
+  return (double)10.0;
+}
+
+double getAzimuth() {
+  return (double)10.0;
+}
