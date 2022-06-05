@@ -24,14 +24,14 @@ char KEY() { // return a character of input from any source
         } else {
           // Used to use: irrecv.decode(&results)
           xnL = 0L;
-          /*
+          #ifndef __METRO_M4__
           if (irrecv.decode()) {
             //xnL = results.value;
-			xnL = irrecv.results.value;
+            xnL = irrecv.results.value;
             if (xnL == 0xffffffffL) xnL = 0L;
             irrecv.resume(); // Receive the next value
           }
-          // */
+          #endif
         }
 
         if (irsetup && (xnL != 0L)) {
@@ -321,6 +321,11 @@ void TERMclear() {
   ansi.clearScreen();
 }
 
+void TERMlineup() {
+  // Move cursor up one line
+  ansi.cursorUp(1);
+}
+
 void TERMcursor() {
   //Set VT100 cursor to underline
   TCterminal.write(0x1b); // esc
@@ -363,19 +368,25 @@ void TERMtextcolor( char buf ) {
 
 void WAITASEC(int n) {
   // Wait until the next second tick
+  #ifndef __METRO_M4__
+  long initialTime = rtczero.getSeconds();
+
+  for (int x = 0; x < n; x++) {
+      while (initialTime == rtczero.getSeconds()) {;}
+    initialTime == rtczero.getSeconds();
+  }
+  #else
   DateTime now = rtczero.now();
-  //long initialTime = rtczero.getSeconds();
   long initialTime = now.second();
 
   for (int x = 0; x < n; x++) {
     now = rtczero.now();
-	  //while (initialTime == rtczero.getSeconds()) {;}
     while (initialTime == now.second()) {
       now = rtczero.now();
     }
-    //initialTime == rtczero.getSeconds();
-	  initialTime = now.second();
+    initialTime = now.second();
   }
+  #endif
 }
 
 void newdelay( long interval ) {
@@ -395,14 +406,14 @@ boolean CHKNUM() {
   //Check for a key press, somewhere
   // Used to use: irrecv.decode(&results)
   IRkey = 0L;
-  /*
+  #ifndef __METRO_M4__
   if (irrecv.decode()) {
     //IRkey = results.value;
-	IRkey = irrecv.results.value;
+    IRkey = irrecv.results.value;
     if (IRkey == 0xffffffffL) IRkey = 0L;
     irrecv.resume(); // Receive the next value
   }
-  // */
+  #endif
   boolean flag = TCterminal.available() || TC_LCD.available() || (IRkey != 0L);
   return flag;
 }
@@ -427,22 +438,52 @@ float getMagCompassHeading() {
   return FMAGHDG;
 }
 
-boolean getDistanceSensorPresent() {
-  RFD77402present = false;
-  //if (tubeDistance.begin() == true) {
-    // TCterminal.println("RFD77402 Distance Sensor detected.");
-  //  RFD77402present = true;
-  //}
-  return RFD77402present;
-}
+double getMMC5983MagCompassHeading() {
+  unsigned int rawValue = 0;
+    double heading = 0;
+    double normalizedX = 0;
+    double normalizedY = 0;
+    double normalizedZ = 0;
 
-unsigned int getDistanceSensor() {
-  unsigned int distance = 0;
-  //byte errorCode = tubeDistance.takeMeasurement();
-  //if (errorCode == CODE_VALID_DATA) {
-  //  distance = tubeDistance.getDistance();
-  //}
-  return distance;
+    rawValue = MMC5983MAmag.getMeasurementX();
+    normalizedX = (double)rawValue - 131072.0;
+    normalizedX /= 131072.0;
+
+    rawValue = MMC5983MAmag.getMeasurementY();
+    normalizedY = (double)rawValue - 131072.0;
+    normalizedY /= 131072.0;
+
+    rawValue = MMC5983MAmag.getMeasurementZ();
+    normalizedZ = (double)rawValue - 131072.0;
+    normalizedZ /= 131072.0;
+
+    // Magnetic north is oriented with the Y axis
+    if (normalizedY != 0)
+    {
+        if (normalizedX < 0)
+        {
+            if (normalizedY > 0)
+                heading = 57.2958 * atan(-normalizedX / normalizedY); // Quadrant 1
+            else
+                heading = 57.2958 * atan(-normalizedX / normalizedY) + 180; // Quadrant 2
+        }
+        else
+        {
+            if (normalizedY < 0)
+                heading = 57.2958 * atan(-normalizedX / normalizedY) + 180; // Quadrant 3
+            else
+                heading = 360 - (57.2958 * atan(normalizedX / normalizedY)); // Quadrant 4
+        }
+    }
+    else
+    {
+        // atan of an infinite number is 90 or 270 degrees depending on X value
+        if (normalizedX > 0)
+            heading = 270;
+        else
+            heading = 90;
+    }
+    return heading;
 }
 
 boolean getRockerTiltPresent() {
@@ -454,9 +495,40 @@ boolean getTubeTiltPresent() {
 }
 
 double getAltitude() {
-  return (double)10.0;
+  DECAL = DECALenc.read();
+  double faltitudenow = (double)DECAL * 90.0 / (double)RDECAL;
+  return faltitudenow;
 }
 
 double getAzimuth() {
-  return (double)10.0;
+  RAAZ = 0L; RAAZenc.read();
+  double fazimuthnow = (double)RAAZ * 360.0 / (double)RRAAZ;
+  return fazimuthnow;
+}
+
+boolean getAzRefSensor() {
+  // Return true if Azimuth Reference Sensor, which is a Hall Effect Sensor, (Non-Latching)
+  // is detecting the magnet mounted in the bottom board of the telescope.
+  // This provides a fixed reference point for all Azimuth measurements,
+  // initialization, and alignments.
+  
+  return (digitalRead(AZREFsensor) == LOW);
+}
+
+boolean getHorizonRefSensor() {
+  // Return true if Altitude Horizon Sensor, which is a Hall Effect Sensor, (Non-Latching)
+  // is detecting the magnet mounted in the side board of the telescope.
+  // This provides a fixed reference point for all Altitude measurements,
+  // initialization, and alignments -- IF the tilt inclinometer is not present!
+  
+  return (digitalRead(HORIZONlim) == LOW);
+}
+
+boolean getZenithRefSensor() {
+  // Return true if Altitude Zenith Sensor, which is a Hall Effect Sensor, (Non-Latching)
+  // is detecting the magnet mounted in the side board of the telescope.
+  // This provides a fixed reference point for all Altitude measurements,
+  // initialization, and alignments -- IF the tilt inclinometer is not present!
+  
+  return (digitalRead(ZENITHlim) == LOW);
 }

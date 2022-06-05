@@ -16,8 +16,8 @@ Azimuth       Altitude      Ascension   Declination  Azimuth Altitude
 270^ 40' 33"  89* 33' 20"  22h 33m 21s -22^ 22' 12'  80.1    50.3
 Target Object: current position
 Current Diffs from Target:  V xxxx  > xxxx
-Maximum Ranges       Base Tilt   Tube Tilt   Power    Tube     Magnetic
-Azimuth   Altitude   X    Y      X    Y      Voltage  Distance Variation
-16000000  16000000   0.0  0.0    45.3 0.0    12.12    1200 mm  5.8
+Maximum Ranges       Base Tilt   Tube Tilt   Power    Current  Magnetic
+Azimuth   Altitude   X    Y      X    Y      Voltage  (mA)     Variation
+16000000  16000000   0.0  0.0    45.3 0.0    12.12    1200     5.8
 Command:  0-8 Sun, Moon, Planet   . Star   - Non-Stellar (Scan)
           9 Arbitrary   <Enter> Goto   <bckspc> Initialize

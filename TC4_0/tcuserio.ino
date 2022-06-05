@@ -22,12 +22,16 @@ void oledprintData() {
     // ...and time
     print2digits((int)myAstro.getLT());
     oled.print(":");
-	  DateTime now = rtczero.now();
-    //print2digits(rtczero.getMinutes());
-	  print2digits(now.minute());
+    #ifndef __METRO_M4__
+    print2digits(rtczero.getMinutes());
     oled.print(":");
-    //print2digits(rtczero.getSeconds());
-	  print2digits(now.second());
+    print2digits(rtczero.getSeconds());
+    #else
+    DateTime now = rtczero.now();
+    print2digits(now.minute());
+    oled.print(":");
+    print2digits(now.second());
+    #endif
     oled.display();
   }
 }
@@ -40,7 +44,7 @@ void printstatusscreen() {
     oled.display();
   }
   myAstro.setTimeZone(TZONE);
-  DSTFLAG = myAstro.useAutoDST();
+  if (DSTAUTOFLAG) DSTFLAG = myAstro.useAutoDST();
   TERMclear();
   TERMcursor();
   TERMtextcolor('g');
@@ -78,8 +82,8 @@ void printstatusscreen() {
   //270^ 40' 33"  89* 33' 20"  22h 33m 21s -22^ 22' 12'  80.1    50.3
   TCterminal.println("Target Object:");
   TCterminal.println("Current Diffs from Target:"); //  V xxxx  > xxxx");
-  //TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Tube     Magnetic");
-  //TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  Distance Variation");
+  //TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Magnetic");
+  //TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  Variation");
   TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Current  Magnetic");
   TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  (mA)     Variation");
   //16000000  16000000   100000    0.0  0.0    45.3 0.0    12.12
@@ -265,12 +269,52 @@ void printBME280() {
   }
 }
 
+void printBME280LCD() {
+  double tmptemp, tmphumid, tmppinhg, tmpheight;
+  tmptemp = bme280.readTempF();
+  tmphumid = bme280.readFloatHumidity();
+  tmppinhg = (bme280.readFloatPressure() * 0.0002953);
+  tmpheight = bme280.readFloatAltitudeFeet();
+  
+  {
+    LCDline1();
+    LCDprint("Temp: "); // Temperature
+    FTEMPF = tmptemp;
+    LCDprint(FTEMPF, 2);
+    LCDprint(" F ");
+  }
+  {
+    FPINHG = tmppinhg;
+    LCDline2();
+    LCDprint("Pres: ");
+    LCDprint(FPINHG, 2);
+    LCDprint(" InHg ");
+  }
+  {
+    LCDline3();
+    LCDprint("Humid: ");
+    FHUMID = tmphumid;
+    LCDprint(FHUMID, 2);
+    LCDprint("% ");
+  }
+  {
+    FHEIGHT = tmpheight;
+    LCDline4();
+    LCDprint("Alt: ");
+    LCDprint(FHEIGHT, 2);
+    LCDprint(" ft  ");
+  }
+}
+
 void updatestatusscreen() {
   double ftmp, ftmp2, ftmplat, ftmplong, ftmpalt;
   int itmp;
   byte tmpminutes;
-  boolean tmpflag;
+  boolean tmpflag, azimuthchanged, altitudechanged;
   float tmpMagVariation = magVariation;
+
+  azimuthchanged = false;
+  altitudechanged = false;
   ftmplat = FLATITUDE;
   FLATITUDE = eecharbuf.strunion.FLATITUDE = ubloxGPS.getLatitude() / 10000000.;
   ftmplong = FLONGITUDE;
@@ -290,19 +334,23 @@ void updatestatusscreen() {
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(0, 5); showDate(); //Print date
     }
-    tmpflag = myAstro.useAutoDST();
+    //tmpflag = myAstro.useAutoDST();
     //tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
   }
   tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
-  tmpflag = myAstro.useAutoDST();
+  if (DSTAUTOFLAG) tmpflag = myAstro.useAutoDST();
+  #ifndef __METRO_M4__
+  rtchours = (byte)rtczero.getHours();
+  tmpminutes = rtcmin;
+  rtcmin = (byte)rtczero.getMinutes();
+  rtcseconds = rtczero.getSeconds();
+  #else
   DateTime now = rtczero.now();
-  //rtchours = (byte)rtczero.getHours();
   rtchours = (byte)now.hour();
   tmpminutes = rtcmin;
-  //rtcmin = (byte)rtczero.getMinutes();
   rtcmin = (byte)now.minute();
-  //rtcseconds = rtczero.getSeconds();
   rtcseconds = now.second();
+  #endif
   // Print Time(s)
   myAstro.setGMTtime(rtchours, rtcmin, rtcseconds);
   if (eecharbuf.strunion.SerialTermflag) {
@@ -376,12 +424,22 @@ void updatestatusscreen() {
       }
     }
   }
+  if (MMC5983MAMagCompasspresent) {
+    ftmp = getMMC5983MagCompassHeading();
+    if (FMAGHDG != ftmp) {
+      FMAGHDG = ftmp;
+      if (eecharbuf.strunion.SerialTermflag) {
+        TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
+      }
+    }
+  }
   //*
   //Current position
   // print Azimuth, Altitude
   ftmp = getAzimuth();
   if (FAZIMUTH != ftmp) {
     FAZIMUTH = ftmp;
+    azimuthchanged = true;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(0, 11); printDegMinSecs(FAZIMUTH);
     }
@@ -389,10 +447,12 @@ void updatestatusscreen() {
   ftmp = getAltitude();
   if (FALTITUDE != ftmp) {
     FALTITUDE = ftmp;
+    altitudechanged = true;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(15, 11); printDegMinSecs(FALTITUDE);
     }
   }
+  
   myAstro.setAltAz(FALTITUDE, FAZIMUTH);
   myAstro.doAltAz2RAdec();
   //newdelay(10);
@@ -414,15 +474,30 @@ void updatestatusscreen() {
     }
     //screenDecRefresh = false;
   }
-
+  if (azimuthchanged) {
+    float encoderpercent = (float)RAAZ * 100. / (float)RRAAZ;
+    if (eecharbuf.strunion.SerialTermflag) {
+      TERMxy(55, 11); TCterminal.print(encoderpercent);
+    }
+  }
+  if (altitudechanged) {
+    float encoderpercent = (float)DECAL * 100. / (float)RDECAL;
+    if (eecharbuf.strunion.SerialTermflag) {
+      TERMxy(63, 11); TCterminal.print(encoderpercent);
+    }
+  }
+  
   myObjects.setRAdec(FRA, FDEC);
   myObjects.identifyObject();
   // print Object designation that is closest to this position
   if (eecharbuf.strunion.SerialTermflag) {
     TERMxy(17, 12); printObject();
   }
+
   //*
   // print target positions
+  azimuthchanged = false;
+  altitudechanged = false;
   if (COMMAND == STAYFUNC ) {
     TRA = FRA; TDEC = FDEC;
   }
@@ -443,6 +518,7 @@ void updatestatusscreen() {
   ftmp = myAstro.getAzimuth();
   if (TAZIMUTH != ftmp) {
     TAZIMUTH = ftmp;
+    azimuthchanged = true;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(0, 16); printDegMinSecs(TAZIMUTH);
     }
@@ -450,6 +526,7 @@ void updatestatusscreen() {
   ftmp = myAstro.getAltitude();
   if (TALTITUDE != ftmp) {
     TALTITUDE = ftmp;
+    altitudechanged = true;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(15, 16); printDegMinSecs(TALTITUDE);
     }
@@ -465,6 +542,18 @@ void updatestatusscreen() {
     previousTDEC = TDEC;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(41, 16); printDegMinSecs(TDEC);
+    }
+  }
+  if (azimuthchanged) {
+    float encoderpercent = (float)TAZIMUTH / 3.600;
+    if (eecharbuf.strunion.SerialTermflag) {
+      TERMxy(55, 16); TCterminal.print(encoderpercent);
+    }
+  }
+  if (altitudechanged) {
+    float encoderpercent = (float)TALTITUDE / .900;
+    if (eecharbuf.strunion.SerialTermflag) {
+      TERMxy(63, 16); TCterminal.print(encoderpercent);
     }
   }
   if (eecharbuf.strunion.SerialTermflag) {
@@ -490,10 +579,10 @@ void updatestatusscreen() {
         if (eecharbuf.strunion.SerialTermflag) {
           TERMxy(22, 21);
           // print Base tilt
-          TCterminal.print(rockerTilt.getTiltLevelOffsetAngleX());
+          TCterminal.print(rockerTilt.getTiltLevelOffsetAngleX()-eecharbuf.strunion.FtiltXrockeroff);
           TCterminal.print("  ");
           TERMxy(29, 21);
-          TCterminal.print(rockerTilt.getTiltLevelOffsetAngleY());
+          TCterminal.print(rockerTilt.getTiltLevelOffsetAngleY()-eecharbuf.strunion.FtiltYrockeroff);
           TCterminal.print("  ");
         }
       } else rockerTilt.reset();
@@ -533,19 +622,6 @@ void updatestatusscreen() {
       }
     }
   }
-  if (getDistanceSensorPresent()) {
-    unsigned int utmp = getDistanceSensor();
-    if (distance != utmp) {
-      distance = utmp;
-      if (eecharbuf.strunion.SerialTermflag) {
-        //TERMxy(60, 21);
-        //if (distance < 2000) {
-        //  TCterminal.print(distance);
-        //  TCterminal.print(" mm  ");
-        //}
-      }
-    }
-  }
   if (magVariation != tmpMagVariation) {
     magVariation = tmpMagVariation;
     if (eecharbuf.strunion.SerialTermflag) {
@@ -554,7 +630,6 @@ void updatestatusscreen() {
     }
     screenDecRefresh = false;
   }
-  //newdelay(20);
 }
 
 void updatestatusLCD() {
@@ -627,6 +702,12 @@ void updatestatusLCD() {
     LCDprint("9 Arbitrary  . Star");
     LCDline4();
     LCDprint("- Nebulae  <- Init");
+  } else if (LCDscreenNum == 4) {
+    if (BMEpresent) {
+      printBME280LCD();
+    } else {
+      LCDscreenNum = 0;
+    }
   }
 }
 
