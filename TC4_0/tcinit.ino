@@ -483,6 +483,8 @@ void inithardware() { //Set up all the hardware interfaces
   // initialize digital pin LED_BUILTIN as an output.
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(AZREFsensor, INPUT_PULLUP);
+  pinMode(HORIZONlim, INPUT_PULLUP);
+  pinMode(ZENITHlim, INPUT_PULLUP);
   
   eepromDefaults();
   AzimuthEncoderInitialized = AltitudeEncoderInitialized = false;
@@ -549,7 +551,12 @@ void inithardware() { //Set up all the hardware interfaces
     TCterminal.println("Tube Murata SCL3300 inclinometer detected.");
     // Put this inclinometer into Mode 1, since we are using it to measure 0-90 Degree angles
     tubeTilt.setMode(1);
-    tubeTilt.begin(SPI_SS2);
+    if (tubeTilt.begin(SPI_SS2)) {
+      TCterminal.println("Tube Murata SCL3300 inclinometer now in Mode 1.");
+	} else {
+      tubeTiltPresent = false;
+      TCterminal.println("Tube Murata SCL3300 inclinometer failed to transition to Mode 1.");
+	}
   }
 
   if (getRockerTiltPresent()) {
@@ -588,13 +595,16 @@ void inithardware() { //Set up all the hardware interfaces
   }
   
   if (eecharbuf.strunion.INA219flag) {
-    ina219.begin(); // Voltage monitor
-    // To use a slightly lower 32V, 1A range (higher precision on amps):
-    //ina219.setCalibration_32V_1A();
-    // Or to use a lower 16V, 400mA range (higher precision on volts and amps):
-    ina219.setCalibration_16V_400mA();
-    busvolts = 0.;
-    current_mA = 0.;
+    if (ina219.begin()) { // Voltage monitor
+      // To use a slightly lower 32V, 1A range (higher precision on amps):
+      //ina219.setCalibration_32V_1A();
+      // Or to use a lower 16V, 400mA range (higher precision on volts and amps):
+      ina219.setCalibration_16V_400mA();
+      busvolts = 0.;
+      current_mA = 0.;
+	} else {
+	  eecharbuf.strunion.INA219flag = false;
+	}
   }
   if (eecharbuf.strunion.OLEDflag) {
     oled.begin();

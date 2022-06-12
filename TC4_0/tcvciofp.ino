@@ -306,8 +306,7 @@ boolean RDLBTN() {
 }
 
 void TERMclear() {
-  TCterminal.print(" ");
-  //newdelay(500);
+  //TCterminal.print(" ");
   //Clear VT100 screen and home cursor
   /*
     TCterminal.write(0x1b); // esc

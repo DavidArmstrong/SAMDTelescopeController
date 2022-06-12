@@ -1,5 +1,5 @@
 Arduino SAMD-based Telescope Controller 4.00.00
-By David Armstrong, 2022
+By David Armstrong, June 2022
 =============================
 
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.

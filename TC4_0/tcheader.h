@@ -93,15 +93,14 @@ const int BME280_ADR = 0x77;
 
 #ifndef __METRO_M4__
 #include <RTCZero.h> //SAMD21 Real Time Clock https://www.arduino.cc/en/Reference/RTC
-//#include "RTC_SAMD21.h" //https://github.com/Seeed-Studio/Seeed_Arduino_RTC
 #else
-#include "RTC_SAMD51.h" //https://github.com/Seeed-Studio/Seeed_Arduino_RTC
+#include "RTC_SAMD51.h" // https://github.com/Seeed-Studio/Seeed_Arduino_RTC
 #include "DateTime.h"
 #endif
 
 #include <math.h> //Oh yeah.....
-#include "SiderealPlanets.h" //Astronomy routines
-#include "SiderealObjects.h" //Astronomy Tables
+#include "SiderealPlanets.h" //Astronomy routines https://github.com/DavidArmstrong/SiderealPlanets
+#include "SiderealObjects.h" //Astronomy Tables https://github.com/DavidArmstrong/SiderealObjects
 #include <curveFitting.h> // https://github.com/Rotario/arduinoCurveFitting
 
 #include "extEEPROM.h" // I2C EEPROM https://github.com/PaoloP74/extEEPROM
@@ -129,10 +128,10 @@ const int BME280_ADR = 0x77;
 // https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
 
 //Oooo, where did this come from?!  :-)
-#include "WMM_Tinier.h" // WMM Magnetic variation library
+#include "WMM_Tinier.h" // WMM Magnetic variation - https://github.com/DavidArmstrong/WMM_Tinier
 
 #include <SPI.h> //Need for Murata inclinometer sensor
-#include "SCL3300.h" //Oooo, where did this come from?!  :-)
+#include "SCL3300.h" // https://github.com/DavidArmstrong/Arduino-SCL3300
 
 
 //=========================================
@@ -314,7 +313,6 @@ Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder fo
 #ifndef __METRO_M4__
 IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
 RTCZero rtczero; // Sparkfun Redboard Turbo internal Real Time Clock
-//RTC_SAMD21 rtczero; // Seeed-Studio SAMD RTC
 #else
 RTC_SAMD51 rtczero;
 #endif

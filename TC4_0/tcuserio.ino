@@ -153,6 +153,8 @@ void printstatusscreen() {
   previousTDEC = TDEC + 1.;
   magVariation = -90.;
   screenDecRefresh = true;
+  TAZIMUTH = -1.;
+  TALTITUDE = -1.;
 }
 
 void showDate() {

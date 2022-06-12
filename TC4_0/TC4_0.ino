@@ -24,10 +24,10 @@
 #endif
 
 // Terminal Display Output - Pick one - If at all possible, use Serial2
-//#define TCterminal Serial
+#define TCterminal Serial
 // Serial2 uses PINS D2-TX, D3-RX for SAMD21; PINS D7-TX, D4-RX for SAMD51
 // This can be set to go to an Xbee module for wireless interaction
-#define TCterminal Serial2
+//#define TCterminal Serial2
 
 /* LCD output - Serial1 is recommended for either PIC LCD or AVR LCD
 // Although the AVR LCD hardware also has an IIC option
