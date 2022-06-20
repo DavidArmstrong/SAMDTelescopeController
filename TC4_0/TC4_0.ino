@@ -13,7 +13,7 @@
 #define DEFAULT_TIME_ZONE    -8.0    /* PST */
 // Daylight saving usage - Auto figures out if DST is active or not in US locations only
 #define DEFAULT_USE_DST_AUTO_IN_US    true
-#define DEFAULT_USE_DST                false
+#define DEFAULT_USE_DST               false
 
 //If not using the Metro M4, comment out the next line
 #define __METRO_M4__

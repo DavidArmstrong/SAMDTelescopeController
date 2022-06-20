@@ -1,4 +1,4 @@
-/* Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics - September 2022
+/* Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics - June 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO
@@ -15,14 +15,20 @@
 // Arduino Digital Pin Usage declarations
 const int HORIZONlim = 5; // D5 - Altitude axis Horizon reference point
 const int ZENITHlim = 6; // D6 - Altitude axis Zenith point
-  // D7 = Serial2 Tx - to XBee Green (SAMD51) */
+// D7 = Serial2 Tx - to XBee Green (SAMD51) */
 const int AZREFsensor = 8; /* D8 - Azimuth axis reference point */
 
 const int SPI_SS2 = 9; // D9 - telescope tube inclinometer sensor select
 const int SPI_SS1 = 10; // D10 - Rocker Base inclinometer sensor select
 // IR Detector Pin - Use TV/DVD IR Remote as a handbox control
 const int IR_RECVpin = 11; /* D11 - IR Remote sensor */
+#define RAAZ_pinA   15
+#define RAAZ_pinB   16
+#define DECAL_pinA  17
+#define DECAL_pinB  18
 const int LOCKBTN = 19; /* A5 */
+// define IR receive pin - for IR Remote Library routines
+int RECV_PIN = IR_RECVpin;
 
 // Account for Redboard Turbo/SAMD21 Weirdness with SerialUSB
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
@@ -36,6 +42,7 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 
 //===========================================
 // Test required library installation
+#ifndef __Libraries__
 #include <Encoder.h> // https://www.pjrc.com/teensy/td_libs_Encoder.html
 #include "wiring_private.h"
 #include <Arduino.h>
@@ -67,9 +74,21 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 #include "SparkFunBME280.h" // https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
 
 #ifndef __METRO_M4__
-#include <IRremote.h> // https://github.com/z3t0/Arduino-IRremote
+#include <IRremote.h> // https://github.com/z3t0/Arduino-IRremote (Version 2.8.1 ONLY)
 #else
-// https://github.com/cyborg5/IRLib2 - Adds formal SAMD21 and SAMD51 support
+#include <IRLibDecodeBase.h> // https://github.com/cyborg5/IRLib2 
+#include <IRLib_P01_NEC.h>   // Now include only the protocols you wish
+#include <IRLib_P02_Sony.h>  // to actually use. The lowest numbered
+#include <IRLib_P07_NECx.h>  // must be first but others can be any order.
+//#include <IRLib_P09_GICable.h>
+//#include <IRLib_P11_RCMM.h>
+#include <IRLibCombo.h>     // After all protocols, include this
+// All of the above automatically creates a universal decoder
+// class called "IRdecode" containing only the protocols you want.
+// Now declare an instance of that decoder.
+IRdecode irdecoder;
+// Include a receiver either this or IRLibRecvPCI or IRLibRecvLoop
+#include <IRLibRecv.h>
 #endif
 
 #include "SCMD.h" // https://github.com/sparkfun/Serial_Controlled_Motor_Driver
@@ -98,10 +117,6 @@ Uart Serial2( &sercom4, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERI
 Stream *SERIALOUT = &Serial2;
 #endif
 
-#define RAAZ_pinA   15
-#define RAAZ_pinB   16
-#define DECAL_pinA  17
-#define DECAL_pinB  18
 Encoder RAAZenc( RAAZ_pinA , RAAZ_pinB ); //Incremental Quadrature Encoder for RA/Aximuth
 Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder for Dec/Altitude
 
@@ -109,6 +124,7 @@ Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder fo
 IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
 RTCZero rtczero; // Sparkfun Redboard Turbo internal Real Time Clock
 #else
+IRrecv irrecv(RECV_PIN);  //pin number for the receiver
 RTC_SAMD51 rtczero;
 #endif
 const int PIN_RESET = 44;
@@ -139,295 +155,20 @@ WMM_Tinier myDeclination;
 SCL3300 rockerTilt, tubeTilt; // inclinometers
 ANSI ansi(&TCterminal); // VT100 support
 ANSI ansi2(&Serial2); // VT100 support
+#endif
 
-void setup() {
-  Serial.begin(115200); //May use VT100 compatible terminal emulator
-  while (!Serial && !Serial2); //Wait for user to open terminal
-  newdelay(2000);
-  Serial.println(" Start with Test of Serial Output.\n");
-  Wire.begin(); // I2C init
-  Serial1.begin(9600); // serial 4x20 LCD display
-
-  #ifndef __METRO_M4__
-  // For SAMD21 Serial2
-  pinPeripheral(2, PIO_SERCOM); // Define Pins for Serial2 UART port
-  pinPeripheral(3, PIO_SERCOM_ALT);
-  #else
-  // For SAMD51 Serial2
-  pinPeripheral(4, PIO_SERCOM); // Define Pins for Serial2 UART port
-  pinPeripheral(7, PIO_SERCOM);
-  #endif
-  Serial2.begin(9600);
-  newdelay(1600); // Give time for Serial2 to init
-
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(AZREFsensor, INPUT_PULLUP);
-  pinMode(HORIZONlim, INPUT_PULLUP);
-  pinMode(ZENITHlim, INPUT_PULLUP);
-  pinMode(LOCKBTN, INPUT_PULLUP);
-
-  // Test 0 - Start means required libraries are installed
-  // Test 1 - Terminal/LCD outputs
-  TERMclear();
-  Serial.println("Telescope Controller 4.0 Diagnostics Sketch");
-  Serial.println("\nRequired Arduino Libraries are installed successfully");
-  Serial.println("Default USB Serial Interface is working\n");
-  LCDclear();
-  Serial1.print("Telescope Controller 4.0 Diagnostics Sketch - LCD working ");
-  Serial2.println("\nTelescope Controller 4.0 Diagnostics Sketch");
-  Serial2.println("Required Arduino Libraries are installed successfully");
-  Serial2.println("Alternate Xbee Wireless Serial Interface is working\n");
-
-  // Test 2 - Terminal input
-  Serial.println("Type letters to test input - Enter when done:");
-  Serial2.println("Type letters to test input - Enter when done:");
-  char PAD[80];
-  ACCEPT(PAD, 80); //Get 80 chars max
-  Serial.println("\n\rInput Test done\n");
-  Serial2.println("\n\rInput Test done\n");
-
-  // Test 3 - EEPROM detect - verify presence of I2C EEPROM
-  byte EEPROMstatus = tcEEPROM.begin(extEEPROM::twiClock100kHz);
-  I2CEEPROMpresent = true;
-  TCterminal.print("I2C EEPROM ");
-  Serial2.print("I2C EEPROM ");
-  if ( EEPROMstatus != 0 ) {
-    I2CEEPROMpresent = false;
-    TCterminal.print("*NOT* ");
-    Serial2.print("*NOT* ");
-  }
-  TCterminal.println("detected.");
-  Serial2.println("detected.");
-
-  // Test 4 - u-blox GPS detection
-  if ((ubloxGPS.begin() == false) || !I2CEEPROMpresent ) {
-    TCterminal.println("GPS *NOT* detected.");
-    Serial2.println("GPS *NOT* detected.");
-  } else { // GPS online
-    TCterminal.println("GPS detected.");
-    Serial2.println("GPS detected.");
-  }
-
-  // Test 5 - Murata SCL3300 Inclinometer Sensors detection
-  TCterminal.print("Rocker Murata SCL3300 inclinometer ");
-  Serial2.print("Rocker Murata SCL3300 inclinometer ");
-  if (!rockerTilt.begin(SPI_SS1)) {
-    TCterminal.print("not ");
-    Serial2.print("not ");
-  }
-  TCterminal.println("detected.");
-  Serial2.println("detected.");
-  
-  TCterminal.print("Tube Murata SCL3300 inclinometer ");
-  Serial2.print("Tube Murata SCL3300 inclinometer ");
-  if (tubeTilt.begin(SPI_SS2)) {
-    TCterminal.println("detected.");
-    Serial2.println("detected.");
-    // Put this inclinometer into Mode 1, since we are using it to measure 0-90 Degree angles
-    tubeTilt.setMode(1);
-    TCterminal.print("Tube Murata SCL3300 inclinometer ");
-    Serial2.print("Tube Murata SCL3300 inclinometer ");
-    if (tubeTilt.begin(SPI_SS2)) {
-      TCterminal.print("now in");
-      Serial2.print("now in");
-    } else {
-      TCterminal.print("failed to transition to");
-      Serial2.print("failed to transition to");
-    }
-    TCterminal.println(" Mode 1.");
-    Serial2.println(" Mode 1.");
-  } else {
-    TCterminal.println("not detected.");
-    Serial2.println("not detected.");
-  }
-
-  // Test 6 - Several types of Magnetic Compass detection
-  Serial.println("\nCheck for various magnetic compass hardware:");
-  Serial2.println("\nCheck for various magnetic compass hardware:");
-  HMC6352.Wake();  // This is the really old EOL compass
-  newdelay(20);
-  FMAGHDG = HMC6352.GetHeading();
-  HMC6352.Sleep();
-  if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
-    TCterminal.println("HMC6352 Magnetic Compass not detected.");
-    Serial2.println("HMC6352 Magnetic Compass not detected.");
-    // Initialize the HMC6343 and verify its physical presence
-    if (dobHMC6343.init()) {
-      TCterminal.println("HMC6343 Magnetic Compass detected.");
-      Serial2.println("HMC6343 Magnetic Compass detected.");
-    }
-    if (MMC5983MAmag.begin()) {
-      TCterminal.println("MMC5983MA Magnetic Compass detected.");
-      Serial2.println("MMC5983MA Magnetic Compass detected.");
-      MMC5983MAmag.softReset();
-    }
-  } else { // Old Magnetic Compass online
-    TCterminal.println("HMC6352 Magnetic Compass detected.");
-    Serial2.println("HMC6352 Magnetic Compass detected.");
-  }
-  TCterminal.println("");
-  Serial2.println("");
-
-  // Test 7 - Voltage monitor detection
-  TCterminal.print("Adafruit INA219 Voltage/Current monitor ");
-  Serial2.print("Adafruit INA219 Voltage/Current monitor ");
-  if (!ina219.begin()) {
-    TCterminal.print("not ");
-    Serial2.print("not ");
-  }
-  TCterminal.println("detected.");
-  Serial2.println("detected.");
-
-  // Test 8 - BME280 Temperature, Pressure,Humidity Sensor detection
-  byte bme280_id = bme280.begin(); //Returns ID of 0x60 if successful
-  TCterminal.print("BME280 Humidity, Barometric Pressure and Temperature sensor ");
-  Serial2.print("BME280 Humidity, Barometric Pressure and Temperature sensor ");
-  if (bme280_id != 0x60) { // Problem with BME280
-    TCterminal.print("not ");
-    Serial2.print("not ");
-  }
-  TCterminal.println("detected.");
-  Serial2.println("detected.");
-
-  // Test 9 - Azimuth Reference Sensor Detection
-  TCterminal.println("\nAzimuth Reference Sensor check");
-  Serial2.println("\nAzimuth Reference Sensor check");
-  TCterminal.println(hitkey);
-  Serial2.println(hitkey);
-  while (!(TCterminal.available() || Serial2.available())) {
-    TCterminal.print("Azimuth Reference Sensor is ");
-    Serial2.print("Azimuth Reference Sensor is ");
-    if (digitalRead(AZREFsensor) == LOW) {
-      TCterminal.println("LOW");
-      Serial2.println("LOW");
-    } else {
-      TCterminal.println("HIGH");
-      Serial2.println("HIGH");
-    }
-    newdelay(500);
-    ansi.cursorUp(1);
-    ansi2.cursorUp(1);
-  }
-  KEY();
-  TCterminal.println("");
-  Serial2.println("");
-
-  // Test 10 - Horizon Reference Sensor Detection
-  TCterminal.println("\nHorizon Reference Sensor check");
-  Serial2.println("\nHorizon Reference Sensor check");
-  TCterminal.println(hitkey);
-  Serial2.println(hitkey);
-  while (!(TCterminal.available() || Serial2.available())) {
-    TCterminal.print("Horizon Reference Sensor is ");
-    Serial2.print("Horizon Reference Sensor is ");
-    if (digitalRead(HORIZONlim) == LOW) {
-      TCterminal.println("LOW");
-      Serial2.println("LOW");
-    } else {
-      TCterminal.println("HIGH");
-      Serial2.println("HIGH");
-    }
-    newdelay(500);
-    ansi.cursorUp(1);
-    ansi2.cursorUp(1);
-  }
-  KEY();
-  TCterminal.println("");
-  Serial2.println("");
-  
-  // Test 11 - Zenith Reference Sensor Detection
-  TCterminal.println("\nZenith Reference Sensor check");
-  Serial2.println("\nZenith Reference Sensor check");
-  TCterminal.println(hitkey);
-  Serial2.println(hitkey);
-  while (!(TCterminal.available() || Serial2.available())) {
-    TCterminal.print("Zenith Reference Sensor is ");
-    Serial2.print("Zenith Reference Sensor is ");
-    if (digitalRead(ZENITHlim) == LOW) {
-      TCterminal.println("LOW");
-      Serial2.println("LOW");
-    } else {
-      TCterminal.println("HIGH");
-      Serial2.println("HIGH");
-    }
-    newdelay(500);
-    ansi.cursorUp(1);
-    ansi2.cursorUp(1);
-  }
-  KEY();
-  TCterminal.println("");
-  Serial2.println("");
-
-  // Test 12 - Lcok/Reinitialize Switch Detection
-  TCterminal.println("\nLcok/Reinitialize Switch check");
-  Serial2.println("\nLcok/Reinitialize Switch check");
-  TCterminal.println(hitkey);
-  Serial2.println(hitkey);
-  while (!(TCterminal.available() || Serial2.available())) {
-    TCterminal.print("Lcok/Reinitialize Switch is ");
-    Serial2.print("Lcok/Reinitialize Switch is ");
-    if (digitalRead(LOCKBTN) == LOW) {
-      TCterminal.println("LOW");
-      Serial2.println("LOW");
-    } else {
-      TCterminal.println("HIGH");
-      Serial2.println("HIGH");
-    }
-    newdelay(500);
-    ansi.cursorUp(1);
-    ansi2.cursorUp(1);
-  }
-  KEY();
-  TCterminal.println("");
-  Serial2.println("");
-
-  // Test 13 - Motor Driver Board detection
-  i2cMotorDriver.settings.commInterface = I2C_MODE;
-  i2cMotorDriver.settings.I2CAddress = MotorDriver_ADR;
-  TCterminal.print("\nI2C Serial Controlled Motor Driver board ");
-  Serial2.print("\nI2C Serial Controlled Motor Driver board ");
-  if ( i2cMotorDriver.begin() != 0xA9 ) //See if a valid ID word is returned
-  {
-    TCterminal.print("not ");
-    Serial2.print("not ");
-  }
-  TCterminal.println("detected.");
-  Serial2.println("detected.");
-
-  TCterminal.println( "\nTests Completed" );
-  Serial2.println( "\nTests Completed" );
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-  while (1) ;
-}
-
+// Function declarations
 #ifndef __METRO_M4__
-void SERCOM2_Handler() {
-  Serial2.IrqHandler();
-}
+void SERCOM2_Handler() { Serial2.IrqHandler(); }
 #else
 // And for SAMD51 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
 // sercom2 - SPI
-void SERCOM4_0_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_1_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_2_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_3_Handler()
-{
-  Serial2.IrqHandler();
-}
+void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
 #endif
 
 void newdelay( long interval ) {
@@ -513,4 +254,354 @@ int ACCEPT(char *buf, int limit) {
       }
     }
   }
+}
+
+
+void setup() {
+  Serial.begin(115200); //May use VT100 compatible terminal emulator
+  while (!Serial && !Serial2); //Wait for user to open terminal
+  newdelay(2000);
+  Serial.println(" Start with Test of Serial Output.\n");
+  Wire.begin(); // I2C init
+  Serial1.begin(9600); // serial 4x20 LCD display
+
+  #ifndef __METRO_M4__
+  // For SAMD21 Serial2
+  pinPeripheral(2, PIO_SERCOM); // Define Pins for Serial2 UART port
+  pinPeripheral(3, PIO_SERCOM_ALT);
+  #else
+  // For SAMD51 Serial2
+  pinPeripheral(4, PIO_SERCOM); // Define Pins for Serial2 UART port
+  pinPeripheral(7, PIO_SERCOM);
+  #endif
+  Serial2.begin(9600);
+  newdelay(1600); // Give time for Serial2 to init
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(AZREFsensor, INPUT_PULLUP);
+  pinMode(HORIZONlim, INPUT_PULLUP);
+  pinMode(ZENITHlim, INPUT_PULLUP);
+  pinMode(LOCKBTN, INPUT_PULLUP);
+
+  // Test 0 - Start means required libraries are installed
+  // Test 1 - Terminal/LCD outputs
+  TERMclear();
+  Serial.println("Telescope Controller 4.0 Diagnostics Sketch");
+  Serial.println("\nRequired Arduino Libraries are installed successfully");
+  Serial.println("Default USB Serial Interface is working\n");
+  LCDclear();
+  Serial1.print("Telescope Controller 4.0 Diagnostics Sketch - LCD working ");
+  Serial2.println("Telescope Controller 4.0 Diagnostics Sketch");
+  Serial2.println("\nRequired Arduino Libraries are installed successfully");
+  Serial2.println("Alternate Xbee Wireless Serial Interface is working\n");
+
+  // Test 2 - Terminal input
+  Serial.println("Type letters to test input - Enter when done:");
+  Serial2.println("Type letters to test input - Enter when done:");
+  char PAD[80];
+  ACCEPT(PAD, 80); //Get 80 chars max
+  Serial.println("\n\rInput Test done\n");
+  Serial2.println("\n\rInput Test done\n");
+
+  // Test 3 - Azimuth Encoder check
+  TCterminal.println("\nAzimuth Encoder check");
+  Serial2.println("\nAzimuth Encoder check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  RAAZenc.write(0L);
+  long RAAZ;
+  while (!(TCterminal.available() || Serial2.available())) {
+    RAAZ = RAAZenc.read();
+    TCterminal.print("Azimuth Encoder Position: ");
+    Serial2.print("Azimuth Encoder Position: ");
+    TCterminal.println(RAAZ);
+    Serial2.println(RAAZ);
+    newdelay(100);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("");
+  Serial2.println("");
+  
+  // Test 4 - Altitude Encoder check
+  TCterminal.println("\nAltitude Encoder check");
+  Serial2.println("\nAltitude Encoder check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  DECALenc.write(0L);
+  long DECAL;
+  while (!(TCterminal.available() || Serial2.available())) {
+    DECAL = DECALenc.read();
+    TCterminal.print("Altitude Encoder Position: ");
+    Serial2.print("Altitude Encoder Position: ");
+    TCterminal.println(DECAL);
+    Serial2.println(DECAL);
+    newdelay(100);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("\n");
+  Serial2.println("\n");
+  
+  
+  // Test 5 - EEPROM detect - verify presence of I2C EEPROM
+  byte EEPROMstatus = tcEEPROM.begin(extEEPROM::twiClock100kHz);
+  I2CEEPROMpresent = true;
+  TCterminal.print("I2C EEPROM ");
+  Serial2.print("I2C EEPROM ");
+  if ( EEPROMstatus != 0 ) {
+    I2CEEPROMpresent = false;
+    TCterminal.print("*NOT* ");
+    Serial2.print("*NOT* ");
+  }
+  TCterminal.println("detected.");
+  Serial2.println("detected.");
+
+  // Test 6 - u-blox GPS detection
+  TCterminal.print("u-blox GPS ");
+  Serial2.print("u-blox GPS ");
+  if ((ubloxGPS.begin() == false) || !I2CEEPROMpresent ) {
+    TCterminal.print("*NOT* ");
+    Serial2.print("*NOT* ");
+  }
+  TCterminal.println("detected.");
+  Serial2.println("detected.");
+
+  // Test 7 - Murata SCL3300 Inclinometer Sensors detection
+  TCterminal.print("Rocker Murata SCL3300 inclinometer ");
+  Serial2.print("Rocker Murata SCL3300 inclinometer ");
+  if (!rockerTilt.begin(SPI_SS1)) {
+    TCterminal.print("not ");
+    Serial2.print("not ");
+  }
+  TCterminal.println("detected.");
+  Serial2.println("detected.");
+  
+  TCterminal.print("Tube Murata SCL3300 inclinometer ");
+  Serial2.print("Tube Murata SCL3300 inclinometer ");
+  if (tubeTilt.begin(SPI_SS2)) {
+    TCterminal.println("detected.");
+    Serial2.println("detected.");
+    // Put this inclinometer into Mode 1, since we are using it to measure 0-90 Degree angles
+    tubeTilt.setMode(1);
+    TCterminal.print("Tube Murata SCL3300 inclinometer ");
+    Serial2.print("Tube Murata SCL3300 inclinometer ");
+    if (tubeTilt.begin(SPI_SS2)) {
+      TCterminal.print("now in");
+      Serial2.print("now in");
+    } else {
+      TCterminal.print("failed to transition to");
+      Serial2.print("failed to transition to");
+    }
+    TCterminal.println(" Mode 1.");
+    Serial2.println(" Mode 1.");
+  } else {
+    TCterminal.println("not detected.");
+    Serial2.println("not detected.");
+  }
+
+  // Test 8 - Several types of Magnetic Compass detection
+  Serial.println("\nCheck for various magnetic compass hardware:");
+  Serial2.println("\nCheck for various magnetic compass hardware:");
+  HMC6352.Wake();  // This is the really old EOL compass
+  newdelay(20);
+  FMAGHDG = HMC6352.GetHeading();
+  HMC6352.Sleep();
+  if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
+    TCterminal.println("HMC6352 Magnetic Compass not detected.");
+    Serial2.println("HMC6352 Magnetic Compass not detected.");
+    // Initialize the HMC6343 and verify its physical presence
+    if (dobHMC6343.init()) {
+      TCterminal.println("HMC6343 Magnetic Compass detected.");
+      Serial2.println("HMC6343 Magnetic Compass detected.");
+    }
+    if (MMC5983MAmag.begin()) {
+      TCterminal.println("MMC5983MA Magnetic Compass detected.");
+      Serial2.println("MMC5983MA Magnetic Compass detected.");
+      MMC5983MAmag.softReset();
+    }
+  } else { // Old Magnetic Compass online
+    TCterminal.println("HMC6352 Magnetic Compass detected.");
+    Serial2.println("HMC6352 Magnetic Compass detected.");
+  }
+  TCterminal.println("");
+  Serial2.println("");
+
+  // Test 9 - Voltage monitor detection
+  TCterminal.println("WARNING: Checking for a non-existant INA219 will hang the system!");
+  Serial2.println("WARNING: Checking for a non-existant INA219 will hang the system!");
+  TCterminal.println("Should this check be done? (y/n)");
+  Serial2.println("Should this check be done? (y/n)");
+  int x = KEY();
+  if ( x == 'y' ) {
+    TCterminal.print("Adafruit INA219 Voltage/Current monitor ");
+    Serial2.print("Adafruit INA219 Voltage/Current monitor ");
+    newdelay(500);
+    if (!ina219.begin()) {
+      TCterminal.print("not ");
+      Serial2.print("not ");
+    }
+    TCterminal.println("detected.");
+    Serial2.println("detected.");
+  }
+
+  // Test 10 - BME280 Temperature, Pressure,Humidity Sensor detection
+  byte bme280_id = bme280.begin(); //Returns ID of 0x60 if successful
+  TCterminal.print("\nBME280 Humidity, Barometric Pressure and Temperature sensor ");
+  Serial2.print("\nBME280 Humidity, Barometric Pressure and Temperature sensor ");
+  if (bme280_id != 0x60) { // Problem with BME280
+    TCterminal.print("not ");
+    Serial2.print("not ");
+  }
+  TCterminal.println("detected.");
+  Serial2.println("detected.");
+
+  // Test 11 - Azimuth Reference Sensor Detection
+  TCterminal.println("\nAzimuth Reference Sensor check");
+  Serial2.println("\nAzimuth Reference Sensor check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  while (!(TCterminal.available() || Serial2.available())) {
+    TCterminal.print("Azimuth Reference Sensor is ");
+    Serial2.print("Azimuth Reference Sensor is ");
+    if (digitalRead(AZREFsensor) == LOW) {
+      TCterminal.println("LOW ");
+      Serial2.println("LOW ");
+    } else {
+      TCterminal.println("HIGH");
+      Serial2.println("HIGH");
+    }
+    newdelay(500);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("");
+  Serial2.println("");
+
+  // Test 12 - Horizon Reference Sensor Detection
+  TCterminal.println("\nHorizon Reference Sensor check");
+  Serial2.println("\nHorizon Reference Sensor check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  while (!(TCterminal.available() || Serial2.available())) {
+    TCterminal.print("Horizon Reference Sensor is ");
+    Serial2.print("Horizon Reference Sensor is ");
+    if (digitalRead(HORIZONlim) == LOW) {
+      TCterminal.println("LOW ");
+      Serial2.println("LOW ");
+    } else {
+      TCterminal.println("HIGH");
+      Serial2.println("HIGH");
+    }
+    newdelay(500);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("");
+  Serial2.println("");
+  
+  // Test 13 - Zenith Reference Sensor Detection
+  TCterminal.println("\nZenith Reference Sensor check");
+  Serial2.println("\nZenith Reference Sensor check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  while (!(TCterminal.available() || Serial2.available())) {
+    TCterminal.print("Zenith Reference Sensor is ");
+    Serial2.print("Zenith Reference Sensor is ");
+    if (digitalRead(ZENITHlim) == LOW) {
+      TCterminal.println("LOW ");
+      Serial2.println("LOW ");
+    } else {
+      TCterminal.println("HIGH");
+      Serial2.println("HIGH");
+    }
+    newdelay(500);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("");
+  Serial2.println("");
+
+  // Test 14 - Lock/Reinitialize Switch Detection
+  TCterminal.println("\nLock/Reinitialize Switch check");
+  Serial2.println("\nLock/Reinitialize Switch check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  while (!(TCterminal.available() || Serial2.available())) {
+    TCterminal.print("Lock/Reinitialize Switch is ");
+    Serial2.print("Lock/Reinitialize Switch is ");
+    if (digitalRead(LOCKBTN) == LOW) {
+      TCterminal.println("LOW ");
+      Serial2.println("LOW ");
+    } else {
+      TCterminal.println("HIGH");
+      Serial2.println("HIGH");
+    }
+    newdelay(500);
+    ansi.cursorUp(1);
+    ansi2.cursorUp(1);
+  }
+  KEY();
+  TCterminal.println("");
+  Serial2.println("");
+
+  // Test 15 - Motor Driver Board detection
+  i2cMotorDriver.settings.commInterface = I2C_MODE;
+  i2cMotorDriver.settings.I2CAddress = MotorDriver_ADR;
+  TCterminal.print("\nI2C Serial Controlled Motor Driver board ");
+  Serial2.print("\nI2C Serial Controlled Motor Driver board ");
+  if ( i2cMotorDriver.begin() != 0xA9 ) //See if a valid ID word is returned
+  {
+    TCterminal.print("not ");
+    Serial2.print("not ");
+  }
+  TCterminal.println("detected.");
+  Serial2.println("detected.");
+
+  // Test 16 - IR Remote Receiver functionality check
+  long xn;
+  TCterminal.println("\nIR Remote Receiver functionality check");
+  Serial2.println("\nIR Remote Receiver functionality check");
+  TCterminal.println(hitkey);
+  Serial2.println(hitkey);
+  #ifdef __METRO_M4__
+  irrecv.enableIRIn(); // Start the receiver
+  #endif
+  do {
+    #ifndef __METRO_M4__
+    if (irrecv.decode()) {
+      // Return an IR input char
+      xn = irrecv.results.value;
+      if (xn != 0xffffffffL) {
+        TCterminal.println(xn, HEX);
+        Serial2.println(xn, HEX);
+      }
+      irrecv.resume(); // Receive the next value
+    }
+	  #else
+    if (irrecv.getResults()) {
+      irdecoder.decode();  //Decode it
+      xn = irdecoder.value;
+      if (xn != 0xffffffffL) {
+        TCterminal.println(xn, HEX);
+        Serial2.println(xn, HEX);
+      }
+      irrecv.enableIRIn(); // Receive the next value
+    }
+    #endif
+  } while (!(TCterminal.available() || Serial2.available()));
+  KEY();
+
+  TCterminal.println( "\n\nTests Completed\n" );
+  Serial2.println( "\n\nTests Completed\n" );
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  while (1) ;
 }

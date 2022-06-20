@@ -9,6 +9,10 @@ It's purpose is to help make sure all the needed software libraries
 are installed, and that the associated required hardware is present and
 working.
 
+If the sketch compiles and loads, you have the needed libraries.  However,
+if you get an error, the code should at least give you a URL for where each
+library can be downloaded from.
+
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
 This application requres a SAMD based processor:

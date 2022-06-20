@@ -113,9 +113,18 @@ const int BME280_ADR = 0x77;
 #include "SparkFunBME280.h" //Temperature, Pressure, Humidity sensor https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
 
 #ifndef __METRO_M4__
-#include <IRremote.h> //Use TV/DVD IR remote https://github.com/z3t0/Arduino-IRremote
+#include <IRremote.h> //Use TV/DVD IR remote https://github.com/z3t0/Arduino-IRremote (Version 2.8.1 ONLY)
 #else
-// https://github.com/cyborg5/IRLib2 - Adds formal SAMD21 and SAMD51 support
+#include <IRLibDecodeBase.h> // First include the decode base https://github.com/cyborg5/IRLib2 
+#include <IRLib_P01_NEC.h>   // Now include only the protocols you wish
+#include <IRLib_P02_Sony.h>  // to actually use. The lowest numbered
+#include <IRLib_P07_NECx.h>  // must be first but others can be any order.
+//#include <IRLib_P09_GICable.h>
+//#include <IRLib_P11_RCMM.h>
+#include <IRLibCombo.h>     // After all protocols, include this
+// All of the above automatically creates a universal decoder
+// class called "IRdecode" containing only the protocols you want.
+#include <IRLibRecv.h>
 #endif
 
 #include "SCMD.h" // Serial Controlled Motor Driver https://github.com/sparkfun/Serial_Controlled_Motor_Driver
@@ -137,7 +146,7 @@ const int BME280_ADR = 0x77;
 //=========================================
 // EEPROM definitions
 const int MAXUCOORD = 200; // maximum number of User Defined Coordinates
-const int EEcheckByte = 0x51;
+const int EEcheckByte = 0x50;
 struct EEstruct {
   double dummy;
   double FtiltXrockeroff;
@@ -174,6 +183,7 @@ struct EEstruct {
   char SiteID[40];
   boolean SerialTermflag; // Serial Terminal output Updated regularly?
   boolean AzRangeMeasured, AlRangeMeasured;
+  boolean enableRealHwInit;
 };
 
 union EEarray {
@@ -212,6 +222,15 @@ DobsonianControlData spData;
 #define FNDARB 0x1f
 // Stay at current telescope position
 #define STAYFUNC 0x22
+
+// Motor Defines to make it more readable
+#define ALTITUDE_MOTOR 0
+#define AZIMUTH_MOTOR 1
+#define CW_DIRECTION 0
+#define CCW_DIRECTION 1
+#define STOP_SPEED 0
+#define SLOW_SPEED 5
+#define FAST_SPEED 31
 
 // User variables
 long IRkey; // Record latest raw IR key code, if seen
@@ -299,7 +318,6 @@ Uart Serial2 (&sercom2, 3, 2, SERCOM_RX_PAD_1, UART_TX_PAD_2);
 #define PAD_SERIAL2_RX (SERCOM_RX_PAD_1)
 #define PIN_SERIAL2_TX 7    /* PB12 */
 #define PAD_SERIAL2_TX (UART_TX_PAD_0)
-//*
 Uart Serial2( &sercom4, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX );
 Stream *SERIALOUT = &Serial2;
 // RX: SERCOM4/PAD[1] = D4 = PB13
@@ -314,6 +332,9 @@ Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder fo
 IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
 RTCZero rtczero; // Sparkfun Redboard Turbo internal Real Time Clock
 #else
+// Now declare an instance of that decoder.
+IRdecode irdecoder;
+IRrecv irrecv(RECV_PIN);  //pin number for the receiver
 RTC_SAMD51 rtczero;
 #endif
 
@@ -338,6 +359,7 @@ boolean rockerTiltPresent, tubeTiltPresent;
 ANSI ansi(&TCterminal); // VT100 support
 boolean AzimuthEncoderInitialized, AltitudeEncoderInitialized;
 
+#ifndef __FUNCTIONDECLARATIONS__
 //===============================================
 // need to declare all functions - whatever
 // TCVCIOFP
@@ -401,6 +423,9 @@ double getAzimuth(void);
 boolean getAzRefSensor();
 boolean getHorizonRefSensor();
 boolean getZenithRefSensor();
+boolean driveMotor(int motor, int direction, int speed, long position);
+boolean driveMotor(int motor, int direction, int speed);
+boolean driveMotorStop(int motor);
 
 // TCDERVIO
 void printDegMinSecs(double n);
@@ -436,4 +461,5 @@ void PRPLANETlcd( int n );
 void STRTturboCLK();
 void tcintro();
 void TC_main();
+#endif
 #endif

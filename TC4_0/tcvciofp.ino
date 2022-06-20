@@ -22,14 +22,21 @@ char KEY() { // return a character of input from any source
           xnL = IRkey;
           IRkey = 0L;
         } else {
-          // Used to use: irrecv.decode(&results)
           xnL = 0L;
           #ifndef __METRO_M4__
+          // Used to use: irrecv.decode(&results)
           if (irrecv.decode()) {
             //xnL = results.value;
             xnL = irrecv.results.value;
             if (xnL == 0xffffffffL) xnL = 0L;
             irrecv.resume(); // Receive the next value
+          }
+          #else
+          if (irrecv.getResults()) {
+            irdecoder.decode();  //Decode it
+            xnL = irdecoder.value;
+            if (xnL == 0xffffffffL) xnL = 0L;
+            irrecv.enableIRIn(); // Receive the next value
           }
           #endif
         }
@@ -412,6 +419,13 @@ boolean CHKNUM() {
     if (IRkey == 0xffffffffL) IRkey = 0L;
     irrecv.resume(); // Receive the next value
   }
+  #else
+  if (irrecv.getResults()) {
+    irdecoder.decode();  //Decode it
+    IRkey = irdecoder.value;
+    if (IRkey == 0xffffffffL) IRkey = 0L;
+    irrecv.enableIRIn(); // Receive the next value
+  }
   #endif
   boolean flag = TCterminal.available() || TC_LCD.available() || (IRkey != 0L);
   return flag;
@@ -530,4 +544,23 @@ boolean getZenithRefSensor() {
   // initialization, and alignments -- IF the tilt inclinometer is not present!
   
   return (digitalRead(ZENITHlim) == LOW);
+}
+
+boolean driveMotor(int motor, int direction, int speed, long position) {
+ // We define here the routine to drive the Azimuth and Altitude motors.
+ // So if any changes need to be made, it only has to be done here, not everywhere.
+ return true;
+}
+boolean driveMotor(int motor, int direction, int speed) {
+ // We define here the routine to drive the Azimuth and Altitude motors.
+ // So if any changes need to be made, it only has to be done here, not everywhere.
+ return true;
+}
+boolean driveMotorStop(int motor) {
+ // We define here the routine to drive the Azimuth and Altitude motors.
+ // So if any changes need to be made, it only has to be done here, not everywhere.
+ if (MotorDriverflag) {
+   // Turn motor off
+ }
+ return true;
 }

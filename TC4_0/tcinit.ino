@@ -4,30 +4,16 @@
 
 // We have to define this function to use the SAMD21 alternate Serial2 pins
 #ifndef __METRO_M4__
-void SERCOM2_Handler() {
-  Serial2.IrqHandler();
-}
+void SERCOM2_Handler() { Serial2.IrqHandler(); }
 #else
 // And for SAMD51 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
 // sercom2 - SPI
-void SERCOM4_0_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_1_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_2_Handler()
-{
-  Serial2.IrqHandler();
-}
-void SERCOM4_3_Handler()
-{
-  Serial2.IrqHandler();
-}
+void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
+void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
 #endif
 
 void eepromDefaults() {
@@ -67,6 +53,8 @@ void eepromDefaults() {
   // Set up default values for Demo mode
   TZONE = eecharbuf.strunion.DTZONE;
   //DSTFLAG = eecharbuf.strunion.DSTFLAG;
+  // Assume Demo mode on initial boot
+  eecharbuf.strunion.enableRealHwInit = false;
   LCDbrightness = 0x9D;
 }
 
@@ -118,7 +106,7 @@ void gotoAzRef() {
       // We're on the sensor, so get off it.
       if (MotorDriverflag) {
         //Run the motor CCW to get off of it
-      
+        driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, SLOW_SPEED);
       } else {
         TCterminal.println("Move telescope in Azimuth CCW to get off of AZ Reference Sensor.");
         TCterminal.println(hitkey);
@@ -131,15 +119,12 @@ void gotoAzRef() {
       }
       // And wait....
       while (getAzRefSensor()) ;
-      if (MotorDriverflag) {
-        // Turn motor off
-      
-      }
+      driveMotorStop(AZIMUTH_MOTOR); // Turn motor off
     }
     if (MotorDriverflag) {
-    newdelay(500);
-    // Start motor in CW direction
-  
+      newdelay(500);
+      // Start motor in CW direction
+      driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, SLOW_SPEED);
     } else {
       TCterminal.println("Move telescope in Azimuth CW to find AZ Reference Sensor.");
       LCDclear();
@@ -213,8 +198,7 @@ void measureAZrange() {
     LCDline2();
     LCDprint(RRAAZ);
   } else {
-    // Stop motor and From now on, ignore the Azimuth Reference Sensor
-    
+    driveMotorStop(AZIMUTH_MOTOR); // Stop motor and From now on, ignore the Azimuth Reference Sensor
   }
   newdelay(500);
   // Next, we need the offsets for the Rocker inclinometer in X and Y from true level
@@ -236,7 +220,7 @@ void measureAZrange() {
       LCDprint("SCL3300 offsets");
     } else {
       // Turn Azimuth motor on CCW towards zero
-      
+      driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, SLOW_SPEED);
     }
     while ( RAAZenc.read() > 0 ) {
       //Get next block of data from sensor
@@ -257,7 +241,7 @@ void measureAZrange() {
       TCterminal.println("AZ Inclinometer Offsets computed.");
     } else {
       // And turn motor Off
-  
+      driveMotorStop(AZIMUTH_MOTOR);
     }
     //`Allow User to Level the Bottom Board now....
     rockertiltlevelcheck();
@@ -281,7 +265,7 @@ void getMagneticNorth() {
       newdelay(10);
 	}
 	// Turn Azimuth motor on going CW around
-	
+	driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, SLOW_SPEED);
     // Get data points - Assume we are starting at Azimuth = 0
     for (i = 0; i < 3600; i++) {
 	  // wait until we get to the next point
@@ -291,8 +275,7 @@ void getMagneticNorth() {
 	  if (MMC5983MAMagCompasspresent) y[i] = getMMC5983MagCompassHeading();
 	  while (RAAZenc.read() % 3600 == 0) ; // wait until off this point
 	}
-	// Stop the motor
-	
+	driveMotorStop(AZIMUTH_MOTOR); // Stop the motor
 	// Now we most likely have a sawtooth pattern of magnetic readings
 	// Need to move the data points around so it's more-or-less a line
 	
@@ -349,21 +332,18 @@ void setAlEncoderAtHorizon() {
       // We're very close to level now
       if (MotorDriverflag) {
         //Run the motor CCW to get above it
-    
+        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, SLOW_SPEED);
       } else {
         printGoAboveHorizon();
       }
       // And wait....
       while (getTubeTiltX() < 0.02) ;
-      if (MotorDriverflag) {
-        // Turn motor off
-      
-      }
+      driveMotorStop(ALTITUDE_MOTOR); // Turn motor off
     }
     newdelay(500);
     if (MotorDriverflag) {
       // Start motor in CW direction
-        
+      driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, SLOW_SPEED);
     } else {
       printGoToHorizon();
     }
@@ -375,22 +355,19 @@ void setAlEncoderAtHorizon() {
       // We're on the sensor, so get off it.
       if (MotorDriverflag) {
         //Run the motor CCW to get above it
-    
+        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, SLOW_SPEED);
       } else {
         printGoAboveHorizon();
       }
     
       // And wait....
       while (getHorizonRefSensor()) ;
-      if (MotorDriverflag) {
-        // Turn motor off
-      
-      }
+      driveMotorStop(ALTITUDE_MOTOR); // Turn motor off
     }
     newdelay(500);
     if (MotorDriverflag) {
       // Start motor in CW direction
-        
+      driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, SLOW_SPEED);
     } else {
       printGoToHorizon();
     }
@@ -408,10 +385,7 @@ void setAlEncoderAtHorizon() {
   // We hit it, so zero the Encoder counts
   DECALenc.write(0L);
   DECAL = 0L;
-  if (MotorDriverflag) {
-    // Stop Altitude Motor here
-    
-  }
+  driveMotorStop(ALTITUDE_MOTOR); // Stop Altitude Motor here
 }
 
 void measureALrangeByLimits() {
@@ -440,7 +414,7 @@ void measureALrangeByLimits() {
   }
   DECAL = RDECAL = eecharbuf.strunion.RDECAL = DECALenc.read();
   eecharbuf.strunion.AlRangeMeasured = true;
-  // Stop AL motor and From now on, ignore the Altitude Reference Sensors
+  driveMotorStop(ALTITUDE_MOTOR); // Stop AL motor and From now on, ignore the Altitude Reference Sensors
 }
 
 double getTubeTiltX() {
@@ -472,7 +446,7 @@ void measureALrangeByInclinometer() {
   eecharbuf.strunion.RDECAL = previouscount;
   eecharbuf.strunion.AlRangeMeasured = true;
   // Stop AL motor and From now on, ignore the Altitude inclinometer
-  
+  driveMotorStop(ALTITUDE_MOTOR);
   tubeTilt.stopFastReadMode();
 }
 
@@ -559,7 +533,7 @@ void inithardware() { //Set up all the hardware interfaces
 	}
   }
 
-  if (getRockerTiltPresent()) {
+  if (getRockerTiltPresent() && eecharbuf.strunion.enableRealHwInit) {
     // If we don't know the Azimuth encoder range, We'll get that first, 
     // with the Rocker tilt offsets, before doing the Level check later on
     if (eecharbuf.strunion.AzRangeMeasured) {
@@ -631,7 +605,7 @@ void inithardware() { //Set up all the hardware interfaces
   
   // Have to have motor driver set up before we can start initializing the mount
   MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
-  if (MotorDriverflag) {
+  if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     TCterminal.println("Motor driver setup.");
     i2cMotorDriver.settings.commInterface = I2C_MODE;
     i2cMotorDriver.settings.I2CAddress = MotorDriver_ADR;
@@ -718,6 +692,8 @@ void inithardware() { //Set up all the hardware interfaces
   irsetup = eecharbuf.strunion.IRSETUPflag; // Is IR table defined?
   #ifndef __METRO_M4__
   irrecv.enableIRIn(); // Start the IR receiver
+  #else
+  irrecv.enableIRIn(); // Start the IR receiver
   #endif
 
   SETIRFLAG(); // Fake it that IR is already set up
@@ -776,6 +752,7 @@ void RESETIME() {
 }
 
 void INIT() {
+  if (eecharbuf.strunion.enableRealHwInit) {
   // Initialize Telescope Mount
   // 1. Find Azimuth Reference
   // 2. Get Azimuth Range
@@ -786,11 +763,8 @@ void INIT() {
     // Go to Azumuth Reference Sensor to zero encoder
     // Or, No Azimuth Reference Sensor available, and range is known, so just zero AZ encoder
     gotoAzRef();  // This zeros the enocder count for us
-    // Stop Azimuth motor
-    if (MotorDriverflag) {
-      
-      newdelay(500);
-    }
+    driveMotorStop(AZIMUTH_MOTOR); // Stop Azimuth motor
+    newdelay(500);
   }
   // 4. Get True North location in Azimuth, if possible
   // - Update Azimuth zero location
@@ -816,6 +790,7 @@ void INIT() {
     AltitudeEncoderInitialized = true;
   }
   // 7. Check with reference star - done elsewhere
+  }
 }
 
 long initIRkey(long previous) {
@@ -849,6 +824,33 @@ long initIRkey(long previous) {
         if (x1 == previous) x1 = 0L;
       }
       irrecv.resume(); // Receive the next value
+    }
+  } while (x1 != x2 || x2 != x3);
+  #else
+  do {
+    if (irrecv.getResults()) {
+      irdecoder.decode();  //Decode it
+      // Return an IR input char if it has been repeated three times in a row
+      xn = irdecoder.value;
+      if (xn != 0xffffffffL) {
+        TCterminal.println(xn, HEX);
+        if (x2 != 0 && x3 == 1) {
+          if (x1 == xn)
+            x3 = x1;
+          else
+            x1 = x2 = 0;
+        }
+
+        if (x1 != 0 && x2 == 0) {
+          if (x1 == xn)
+            x2 = x1;
+          else
+            x1 = 0;
+        }
+        if (x1 == 0 ) x1 = xn;
+        if (x1 == previous) x1 = 0L;
+      }
+      irrecv.enableIRIn(); // Receive the next value
     }
   } while (x1 != x2 || x2 != x3);
   #endif
@@ -929,6 +931,7 @@ void RESETTCI() {
     TCterminal.print(" 5) Refraction: ");    OptionStateMsg(eecharbuf.strunion.RFLAG);
     TCterminal.print(" 6) Site ID: ");
     TERMtextcolor('g');   TCterminal.println(eecharbuf.strunion.SiteID);    TERMtextcolor('w');
+	  TCterminal.print(" 7) Real Telescope Hardware: "); OptionStateMsg(eecharbuf.strunion.enableRealHwInit);
     TCterminal.println(" 0) Done - Return to Main Display");
     LCDclear();
     LCDline1(); LCDprint("1 Volt:"); LCDOptionStateMsg(eecharbuf.strunion.INA219flag);
@@ -938,7 +941,8 @@ void RESETTCI() {
     LCDline3(); LCDprint("5 Ref:"); LCDOptionStateMsg(eecharbuf.strunion.RFLAG);
     LCDprint(" 0 Done"); 
     LCDline4(); LCDprint("6:");
-    LCDprint(eecharbuf.strunion.SiteID); 
+    LCDprint(eecharbuf.strunion.SiteID);
+    LCDprint(" 7 RealHw:"); LCDOptionStateMsg(eecharbuf.strunion.enableRealHwInit);
     choice = KEY();
     if (choice == '1') {
       eecharbuf.strunion.INA219flag = !(eecharbuf.strunion.INA219flag);
@@ -957,6 +961,12 @@ void RESETTCI() {
       inputstrlen = ACCEPT(eecharbuf.strunion.SiteID, 39); //Get 39 chars max
       TCterminal.println(" ");
     }
+	if (choice == '7') {
+    LCDclear();
+    LCDline1(); LCDprint("Are you sure? (y/n)");
+    TCterminal.print("Are you sure? (y/n)");
+    if (GETYORN()) eecharbuf.strunion.enableRealHwInit = !(eecharbuf.strunion.enableRealHwInit);
+	}
   } while (choice != '0');
   SETTCIFLAG();
 }
@@ -1137,7 +1147,7 @@ void doCommand() {
     }
     printstatusscreen();
   } else if (num == '-') {
-    // Non-stella object menu
+    // Non-stellar object menu
     TERMclear();
     TCterminal.println(" Non-stellar Object menu");
     TCterminal.println(" 1 NGC");
@@ -1242,6 +1252,8 @@ void doCommand() {
     LCDclear();
     LCDscreenNum++;
     if (LCDscreenNum > 4) LCDscreenNum = 0;
+  } else if (num == 0x0d) {
+    // Goto previously specified Target position
   }
 }
 
@@ -1300,6 +1312,7 @@ void tcintro() { // Startup screen for user
     LCDline2();
     LCDprint("TC SYSTEM RESET");
     RESETIMEFLAG(); RESETINITFLAG(); // Actual re-initialization done in TC_main()
+	eepromDefaults();
     WAITASEC(3); // Let user know what we've done
   }
   // make it so it doesn't assume errors on start

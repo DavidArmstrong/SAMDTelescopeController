@@ -2,17 +2,30 @@ Arduino SAMD-based Telescope Controller 4.00.00
 By David Armstrong, June 2022
 =============================
 
+This Sketch implements one possible design for a Telescope Controller, using the
+Arduino IDE as a development environment.  It's purpose is to allow me
+to use my telescope to look at stuff, instead of spending a lot of time setting it up.
+(It can be used just as Digital Setting circles with no motors, or motors can be added later.)
+
+See the associated files showing an Eagle schematic of how to connect various interfaces, and
+a diagram showing how all the parts communicate with each other.
+
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
-This application requres a SAMD based processor:
+
+This application requres a SAMD based processor.  Suggestions:
 Option 1: Sparkfun Redboard Turbo - similar to Arduino Zero - based on SAMD21
 https://www.sparkfun.com/products/14812
-Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point)
+Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point, due to memory requirements)
 https://www.adafruit.com/product/3382
 Note: Any SAMD processor Arduino compatible board should work to some degree.
 
-On a Windows computer, you can use the terminal program Tera-Term to access the board via USB.
-You may need to press the Reset button again after programming via the Arduino IDE to see the 
+If the sketch compiles and loads, it has the needed libraries.  However,
+if one get an error, the code should at least give a URL for where each
+library can be downloaded from.
+
+On a Windows computer, one can use the terminal program Tera-Term to access the board via USB.
+The Reset button may need to be pressed again after programming via the Arduino IDE to see the 
 program start from the beginning.
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
@@ -21,7 +34,7 @@ Software Behavior
 
 The primary design focus has been to require as little input as possible from the user to set up. A telescope should be as easy as a toaster to use, and not require the training and agility of an astronaut.
 
-1. Make it wireless.  Battery power is on the telescope itself, not external to it.
+1. Make it wireless.  Battery power is on the telescope itself, not external to it. So no visible wires.
 2. No alignment star hunting, if at all possible.
 3. No input of parameters, other than what is needed to specify the object to look at.
 
@@ -31,8 +44,8 @@ A. Use the USB interface to the processor board.  It's the default, but requires
 B. Use Xbee hardware to allow a wireless serial connection to the system. (Serial2)
 C. Use an LCD display with IR remote for input. (Serial1)
 
-One has to choose either A or B.  Option C can be used by itself, or with one of the
-other methods.
+One has to choose either A or B.  Option C can be used by itself, but one of the
+other methods has to at least be designated as well.
 
 When the system first powers on, it detects what is connected, and adapts as it can accordingly.
 
@@ -84,7 +97,7 @@ The option is enabled at the top of file TC4_0.ino.  The other end of the XBee c
 
 6. Remove requirement for a laptop with:
   A. 4x20 character LCD display (Pin D1 - Serial TX is recommended) OR use I2C bus
-  B. IR detector (Pin 18 = A4)
+  B. IR detector (Pin 11 = D11)
   C. TV/DVD IR remote with backlit kaypad - Instant wireless handbox control
 
 7. Refraction correction:
