@@ -1,5 +1,6 @@
 Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics Sketch
-By David Armstrong, June 2022
+By David Armstrong, July 2022
+See MIT LICENSE.md file
 ==================================================================
 
 This Sketch is designed to be used as a precursor sketch to TC4_0,
@@ -26,5 +27,8 @@ On a Windows computer, you can use the terminal program Tera-Term to access the 
 You may need to press the Reset button again after programming via the Arduino IDE to see the 
 program start from the beginning.
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
+
+At the beginning of the file is a section to allow setting various options and known values.
+If any of these are changed, identical changes will need to be made in the TC4_0.ino sketch.
 
 ==========================

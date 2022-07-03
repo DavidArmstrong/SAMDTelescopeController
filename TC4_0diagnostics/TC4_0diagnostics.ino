@@ -6,18 +6,36 @@
 // This sketch should be used to verify software library installation
 // and hardware connections before attempting to use the TC4_0.ino sketch */
 
+//****** Update the Defines in this section, as needed ********
+
 //If not using the Metro M4, comment out the next line
 #define __METRO_M4__
 
 // Set to 'true' for older PIC based LCD, 'false' for newer AVR based LCD
 #define LCDpicflag true
 
+// Uncomment if associated Encoder is changing counts backwards
+//#define SWAP_AZIMUTH_ENCODER_AB
+//#define SWAP_ALTITUDE_ENCODER_AB
+
+// Uncomment if associated Motor is moving backwards
+//#define REVERSE_AZIMUTH_MOTOR_DIRECTION
+//#define REVERSE_ALTITUDE_MOTOR_DIRECTION
+
+//****** End of User Defined Section ******************************************
+
+// Account for Redboard Turbo/SAMD21 Weirdness with SerialUSB
+#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
+#define Serial SERIAL_PORT_USBVIRTUAL
+#endif
+#define TCterminal Serial
+#define TC_LCD Serial1
+
 // Arduino Digital Pin Usage declarations
 const int HORIZONlim = 5; // D5 - Altitude axis Horizon reference point
 const int ZENITHlim = 6; // D6 - Altitude axis Zenith point
 // D7 = Serial2 Tx - to XBee Green (SAMD51) */
 const int AZREFsensor = 8; /* D8 - Azimuth axis reference point */
-
 const int SPI_SS2 = 9; // D9 - telescope tube inclinometer sensor select
 const int SPI_SS1 = 10; // D10 - Rocker Base inclinometer sensor select
 // IR Detector Pin - Use TV/DVD IR Remote as a handbox control
@@ -30,15 +48,16 @@ const int LOCKBTN = 19; /* A5 */
 // define IR receive pin - for IR Remote Library routines
 int RECV_PIN = IR_RECVpin;
 
-// Account for Redboard Turbo/SAMD21 Weirdness with SerialUSB
-#if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
-#define Serial SERIAL_PORT_USBVIRTUAL
-#endif
-#define TCterminal Serial
-#define TC_LCD Serial1
-
 const char hitkey[] = "Hit Key to continue";
 const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
+// Motor Defines to make it more readable
+#define ALTITUDE_MOTOR 0
+#define AZIMUTH_MOTOR 1
+#define CW_DIRECTION 0
+#define CCW_DIRECTION 1
+#define STOP_SPEED 0
+#define SLOW_SPEED 5
+#define FAST_SPEED 255
 
 //===========================================
 // Test required library installation
@@ -117,8 +136,16 @@ Uart Serial2( &sercom4, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERI
 Stream *SERIALOUT = &Serial2;
 #endif
 
+#ifndef SWAP_AZIMUTH_ENCODER_AB
 Encoder RAAZenc( RAAZ_pinA , RAAZ_pinB ); //Incremental Quadrature Encoder for RA/Aximuth
+#else
+Encoder RAAZenc( RAAZ_pinB , RAAZ_pinA ); //Incremental Quadrature Encoder for RA/Aximuth
+#endif
+#ifndef SWAP_ALTITUDE_ENCODER_AB
 Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder for Dec/Altitude
+#else
+Encoder DECALenc( DECAL_pinB , DECAL_pinA ); //Incremental Quadrature Encoder for Dec/Altitude
+#endif
 
 #ifndef __METRO_M4__
 IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
@@ -261,7 +288,7 @@ void setup() {
   Serial.begin(115200); //May use VT100 compatible terminal emulator
   while (!Serial && !Serial2); //Wait for user to open terminal
   newdelay(2000);
-  Serial.println(" Start with Test of Serial Output.\n");
+  TCterminal.println(" Start with Test of Serial Output.\n");
   Wire.begin(); // I2C init
   Serial1.begin(9600); // serial 4x20 LCD display
 
@@ -286,26 +313,30 @@ void setup() {
   // Test 0 - Start means required libraries are installed
   // Test 1 - Terminal/LCD outputs
   TERMclear();
-  Serial.println("Telescope Controller 4.0 Diagnostics Sketch");
-  Serial.println("\nRequired Arduino Libraries are installed successfully");
-  Serial.println("Default USB Serial Interface is working\n");
+  TCterminal.println("Telescope Controller 4.0 Diagnostics Sketch");
+  TCterminal.println("\nRequired Arduino Libraries are installed successfully");
+  TCterminal.println("Default USB Serial Interface is working\n");
   LCDclear();
-  Serial1.print("Telescope Controller 4.0 Diagnostics Sketch - LCD working ");
+  TC_LCD.print("Telescope Controller 4.0 Diagnostics Sketch - LCD working ");
   Serial2.println("Telescope Controller 4.0 Diagnostics Sketch");
   Serial2.println("\nRequired Arduino Libraries are installed successfully");
   Serial2.println("Alternate Xbee Wireless Serial Interface is working\n");
 
   // Test 2 - Terminal input
-  Serial.println("Type letters to test input - Enter when done:");
+  TCterminal.println("Type letters to test input - Enter when done:");
   Serial2.println("Type letters to test input - Enter when done:");
   char PAD[80];
   ACCEPT(PAD, 80); //Get 80 chars max
-  Serial.println("\n\rInput Test done\n");
+  TCterminal.println("\n\rInput Test done\n");
   Serial2.println("\n\rInput Test done\n");
 
   // Test 3 - Azimuth Encoder check
   TCterminal.println("\nAzimuth Encoder check");
   Serial2.println("\nAzimuth Encoder check");
+  TCterminal.println("Counts must increase when going from North to East to South to West!");
+  Serial2.println("Counts must increase when going from North to East to South to West!");
+  TCterminal.println("If not, uncomment line #define SWAP_AZIMUTH_ENCODER_AB");
+  Serial2.println("If not, uncomment line #define SWAP_AZIMUTH_ENCODER_AB");
   TCterminal.println(hitkey);
   Serial2.println(hitkey);
   RAAZenc.write(0L);
@@ -327,6 +358,10 @@ void setup() {
   // Test 4 - Altitude Encoder check
   TCterminal.println("\nAltitude Encoder check");
   Serial2.println("\nAltitude Encoder check");
+  TCterminal.println("Counts must increase when going from Horizon to Zenith!");
+  Serial2.println("Counts must increase when going from Horizon to Zenith!");
+  TCterminal.println("If not, uncomment line #define SWAP_ALTITUDE_ENCODER_AB");
+  Serial2.println("If not, uncomment line #define SWAP_ALTITUDE_ENCODER_AB");
   TCterminal.println(hitkey);
   Serial2.println(hitkey);
   DECALenc.write(0L);
@@ -403,7 +438,7 @@ void setup() {
   }
 
   // Test 8 - Several types of Magnetic Compass detection
-  Serial.println("\nCheck for various magnetic compass hardware:");
+  TCterminal.println("\nCheck for various magnetic compass hardware:");
   Serial2.println("\nCheck for various magnetic compass hardware:");
   HMC6352.Wake();  // This is the really old EOL compass
   newdelay(20);
@@ -430,8 +465,8 @@ void setup() {
   Serial2.println("");
 
   // Test 9 - Voltage monitor detection
-  TCterminal.println("WARNING: Checking for a non-existant INA219 will hang the system!");
-  Serial2.println("WARNING: Checking for a non-existant INA219 will hang the system!");
+  TCterminal.println("WARNING: Checking for a non-existant INA219 Voltage/Current monitor will hang the system!");
+  Serial2.println("WARNING: Checking for a non-existant INA219 Voltage/Current monitor will hang the system!");
   TCterminal.println("Should this check be done? (y/n)");
   Serial2.println("Should this check be done? (y/n)");
   int x = KEY();
@@ -550,7 +585,8 @@ void setup() {
   TCterminal.println("");
   Serial2.println("");
 
-  // Test 15 - Motor Driver Board detection
+  // Test 15 - Motor Driver Board detection and Motor test
+  boolean motorDetected = false;
   i2cMotorDriver.settings.commInterface = I2C_MODE;
   i2cMotorDriver.settings.I2CAddress = MotorDriver_ADR;
   TCterminal.print("\nI2C Serial Controlled Motor Driver board ");
@@ -559,9 +595,46 @@ void setup() {
   {
     TCterminal.print("not ");
     Serial2.print("not ");
+  } else {
+    motorDetected = true;
   }
   TCterminal.println("detected.");
   Serial2.println("detected.");
+  if (motorDetected) {
+    TCterminal.println("Waiting to enable outputs...");
+    Serial2.println("Waiting to enable outputs...");
+	  while ( i2cMotorDriver.ready() == false );
+    // Check for Azimuth motor inversion
+#ifdef REVERSE_AZIMUTH_MOTOR_DIRECTION
+    while( i2cMotorDriver.busy() ); //Waits until the SCMD is available.
+    i2cMotorDriver.inversionMode(0, 1); //invert Azimuth motor
+#endif
+    // Check for Altitude motor inversion
+#ifdef REVERSE_ALTITUDE_MOTOR_DIRECTION
+    while ( i2cMotorDriver.busy() ); //Waits until the SCMD is available.
+    i2cMotorDriver.inversionMode(1, 1); //invert Altitude motor
+#endif
+    while ( i2cMotorDriver.busy() );
+    i2cMotorDriver.enable(); //Enables the output driver hardware
+	
+	  TCterminal.println("\nHit Key to drive Azimuth motor CW for 10 seconds.");
+    Serial2.println("\nHit Key to drive Azimuth motor CW for 10 seconds.");
+	  KEY();
+	  i2cMotorDriver.setDrive( AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED );
+	  newdelay(10000);
+	  i2cMotorDriver.setDrive( AZIMUTH_MOTOR, 0, 0 );
+	  TCterminal.println("If motor moved CCW, uncomment line #define REVERSE_AZIMUTH_MOTOR_DIRECTION");
+    Serial2.println("If motor moved CCW, uncomment line #define REVERSE_AZIMUTH_MOTOR_DIRECTION");
+	
+	  TCterminal.println("\nHit Key to drive Altitude motor towards Zenith for 10 seconds.");
+    Serial2.println("\nHit Key to drive Altitude motor towards Zenith for 10 seconds.");
+	  KEY();
+	  i2cMotorDriver.setDrive( ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED );
+	  newdelay(10000);
+	  i2cMotorDriver.setDrive( ALTITUDE_MOTOR, 0, 0 );
+	  TCterminal.println("If motor moved towards Horizon, uncomment line #define REVERSE_ALTITUDE_MOTOR_DIRECTION");
+    Serial2.println("If motor moved towards Horizon, uncomment line #define REVERSE_ALTITUDE_MOTOR_DIRECTION");
+  }
 
   // Test 16 - IR Remote Receiver functionality check
   long xn;
@@ -596,6 +669,29 @@ void setup() {
     #endif
   } while (!(TCterminal.available() || Serial2.available()));
   KEY();
+
+  // Test 17 - OLED test - Optional
+  boolean OledDetected = false;
+  TCterminal.println("\nWARNING: Checking for a non-existant OLED display may hang the system!");
+  Serial2.println("\nWARNING: Checking for a non-existant OLED display may hang the system!");
+  TCterminal.println("Should this check be done? (y/n)");
+  Serial2.println("Should this check be done? (y/n)");
+  x = KEY();
+  if ( x == 'y' ) {
+    TCterminal.print("OLED display Test Start");
+    Serial2.print("OLED display Test Start");
+    newdelay(500);
+	oled.begin();
+    oled.clear(ALL);
+    oled.display();
+	newdelay(500);
+    oled.clear(PAGE);
+	oled.setFontType(0);
+    oled.setCursor(0, 0);
+	oled.print("OLED Test ");
+	oled.print("TC 4.00.00");
+	oled.display();
+  }
 
   TCterminal.println( "\n\nTests Completed\n" );
   Serial2.println( "\n\nTests Completed\n" );

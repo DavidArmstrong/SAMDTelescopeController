@@ -547,20 +547,117 @@ boolean getZenithRefSensor() {
 }
 
 boolean driveMotor(int motor, int direction, int speed, long position) {
- // We define here the routine to drive the Azimuth and Altitude motors.
- // So if any changes need to be made, it only has to be done here, not everywhere.
- return true;
+  // We define here the routine to drive the Azimuth or Altitude motors.
+  // So if any changes need to be made, it only has to be done here, not everywhere.
+  // uses .setDrive( motorNum, direction, level ) to drive the motor
+  int currentSpeed = 0;
+  int currentDir = 0;
+  if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
+  if ( (direction != CW_DIRECTION) && (direction != CCW_DIRECTION) ) return false;
+  if ( (speed < 0) || (speed > 255) ) return false;
+  if (motor == ALTITUDE_MOTOR) {
+    currentSpeed = currentAlMtrSpeed;
+	currentDir = currentAlMtrDir;
+  }
+  if (motor == AZIMUTH_MOTOR) {
+    currentSpeed = currentAzMtrSpeed;
+    currentDir = currentAzMtrDir;
+  }
+  if (MotorDriverflag) {
+    if (currentDir != direction) {
+      // Need to stop motor before having it reverse direction
+      for (int i = currentSpeed; i >= 0; i--) {
+        newdelay(5);
+        i2cMotorDriver.setDrive( motor, currentDir, i);
+      }
+	  currentSpeed = 0;
+	}
+	// TBD - PID here, with target check
+    i2cMotorDriver.setDrive( motor, direction, speed );
+	if (motor == ALTITUDE_MOTOR) {
+      currentAlMtrSpeed = speed;
+	  currentAlMtrDir = direction;
+	}
+    if (motor == AZIMUTH_MOTOR) {
+      currentAzMtrSpeed = speed;
+	  currentAzMtrDir = direction;
+	}
+  }
+  return true;
 }
 boolean driveMotor(int motor, int direction, int speed) {
- // We define here the routine to drive the Azimuth and Altitude motors.
- // So if any changes need to be made, it only has to be done here, not everywhere.
- return true;
+  // We define here the routine to drive the Azimuth or Altitude motors.
+  // So if any changes need to be made, it only has to be done here, not everywhere.
+  // uses .setDrive( motorNum, direction, level ) to drive the motor
+  int currentSpeed = 0;
+  int currentDir = 0;
+  if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
+  if ( (direction != CW_DIRECTION) && (direction != CCW_DIRECTION) ) return false;
+  if ( (speed < 0) || (speed > 255) ) return false;
+  if (motor == ALTITUDE_MOTOR) {
+    currentSpeed = currentAlMtrSpeed;
+	currentDir = currentAlMtrDir;
+  }
+  if (motor == AZIMUTH_MOTOR) {
+    currentSpeed = currentAzMtrSpeed;
+    currentDir = currentAzMtrDir;
+  }
+  if (MotorDriverflag) {
+    //i2cMotorDriver.setDrive( motor, direction, speed );
+    //Smoothly move one motor up to speed and back (drive level 0 to 255)
+	if (currentDir != direction) {
+      // Need to stop motor before having it reverse direction
+      for (int i = currentSpeed; i >= 0; i--) {
+        newdelay(5);
+        i2cMotorDriver.setDrive( motor, currentDir, i);
+      }
+	  currentSpeed = 0;
+	}
+    if (currentSpeed < speed) {
+      for (int i = currentSpeed; i < speed; i++) {
+        newdelay(5);
+        i2cMotorDriver.setDrive( motor, direction, i); 
+      }
+    } else {
+      for (int i = currentSpeed; i >= speed; i--) {
+        newdelay(5);
+        i2cMotorDriver.setDrive( motor, direction, i);
+      }
+    }
+    if (motor == ALTITUDE_MOTOR) {
+      currentAlMtrSpeed = speed;
+	  currentAlMtrDir = direction;
+	}
+    if (motor == AZIMUTH_MOTOR) {
+      currentAzMtrSpeed = speed;
+	  currentAzMtrDir = direction;
+	}
+  }
+  return true;
 }
 boolean driveMotorStop(int motor) {
- // We define here the routine to drive the Azimuth and Altitude motors.
- // So if any changes need to be made, it only has to be done here, not everywhere.
- if (MotorDriverflag) {
-   // Turn motor off
- }
- return true;
+  // We define here the routine to stop the Azimuth or Altitude motors.
+  // So if any changes need to be made, it only has to be done here, not everywhere.
+  int currentSpeed = 0;
+  int currentDir = 0;
+  if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
+  if (motor == ALTITUDE_MOTOR) {
+    currentSpeed = currentAlMtrSpeed;
+	currentDir = currentAlMtrDir;
+  }
+  if (motor == AZIMUTH_MOTOR) {
+    currentSpeed = currentAzMtrSpeed;
+    currentDir = currentAzMtrDir;
+  }
+  if (MotorDriverflag) {
+    // uses .setDrive( motorNum, direction, level ) to stop the motor
+    //i2cMotorDriver.setDrive( motor, 0, 0 );
+    for (int i = currentSpeed; i >= 0; i--) {
+      newdelay(5);
+      i2cMotorDriver.setDrive( motor, currentDir, i);
+    }
+    if (motor == ALTITUDE_MOTOR) currentAlMtrSpeed = 0;
+    if (motor == AZIMUTH_MOTOR) currentAzMtrSpeed = 0;
+  }
+  return true;
 }

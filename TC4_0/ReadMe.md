@@ -1,5 +1,6 @@
 Arduino SAMD-based Telescope Controller 4.00.00
-By David Armstrong, June 2022
+By David Armstrong, July 2022
+See MIT LICENSE.md file
 =============================
 
 This Sketch implements one possible design for a Telescope Controller, using the
@@ -16,13 +17,15 @@ Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 This application requres a SAMD based processor.  Suggestions:
 Option 1: Sparkfun Redboard Turbo - similar to Arduino Zero - based on SAMD21
 https://www.sparkfun.com/products/14812
-Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point, due to memory requirements)
+Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point, due to memory/speed requirements)
 https://www.adafruit.com/product/3382
 Note: Any SAMD processor Arduino compatible board should work to some degree.
 
 If the sketch compiles and loads, it has the needed libraries.  However,
 if one get an error, the code should at least give a URL for where each
 library can be downloaded from.
+
+You may also be required to modify the default values defined at the top of the TC4_0.ino sketch.
 
 On a Windows computer, one can use the terminal program Tera-Term to access the board via USB.
 The Reset button may need to be pressed again after programming via the Arduino IDE to see the 
@@ -55,7 +58,7 @@ the ranges are.
 
 To that end, there should be an Azimuth Reference Sensor provided on the telescope mount.  This can be either a switch, light sensor, or magnetic Hall-effect sensor.  Otherwise, the program will ask for manual help in initialization. An inclinometer can also be added to the rocker board to help level the telescope in azimuth, and the system will prompt for that when it is ready.  Note that placement of the Azimuth Reference sensor should be such so that it permits leveling adjustments to be done when the telescope is at that position.
 
-The altitude range needs either sensors for horizon and zenith positions, or an inclinometer. Again, not providing either of these options results in the program prompting for use input to initialize the Altitude axis.
+The altitude range needs either sensors for horizon and zenith positions, or an inclinometer. Again, not providing either of these options results in the program prompting for user input to initialize the Altitude axis.
 
 
 ==========================
@@ -146,8 +149,11 @@ Do your homework.
 Sparkfun Mini Pushbutton switch: https://www.sparkfun.com/products/97
 Hint: Consider getting a Protoshield Kit to mount these parts. It even comes with a pushbutton:  https://www.sparkfun.com/products/13820
 
-Sparkfun Buck-Boost Converter (recommended, because one needs both 5 and 3.3 volt supplies): https://www.sparkfun.com/products/15208
-Note: I use a third Converter to provide a higher voltage to the Motor Controller Board to power the motors.
+Sparkfun Buck-Boost Converter (recommended, because one needs both 5 and 11 volt supplies): https://www.sparkfun.com/products/15208
+Note: I use a second Converter to provide a higher voltage to the Motor Controller Board to power the motors.
+In addition, an extra 3.3 volt power source is required since there are a max number of QWIIC devices being used:
+https://www.sparkfun.com/products/18356
+https://www.sparkfun.com/products/14495
 
 Sparkfun bi-directional level shifter. (Used for input from two quadrature encoders.): https://www.sparkfun.com/products/12009
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="9.5.1">
+<eagle version="9.5.2">
 <drawing>
 <settings>
 <setting alwaysvectorfont="no"/>
@@ -12967,7 +12967,7 @@ with SAMD processors.
 Do NOT attempt to use
 software with UNO.</text>
 <text x="175.26" y="63.5" size="1.778" layer="91">These Schmitt Triggers are used for noise immunity
-on the two most likely to be used Reference Sensors.</text>
+on the two Reference Sensors.</text>
 <text x="154.94" y="180.34" size="1.778" layer="91">Encoder Direction Selection</text>
 <text x="63.5" y="30.48" size="1.778" layer="91">5 volts regulated
 only on this

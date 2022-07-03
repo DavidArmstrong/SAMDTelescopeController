@@ -55,7 +55,8 @@ void eepromDefaults() {
   //DSTFLAG = eecharbuf.strunion.DSTFLAG;
   // Assume Demo mode on initial boot
   eecharbuf.strunion.enableRealHwInit = false;
-  LCDbrightness = 0x9D;
+  // Motor Direction flags
+  LCDbrightness = 0x9D; // Default LCD backlight brightness is MAX
 }
 
 void rockertiltlevelcheck() {
@@ -106,7 +107,7 @@ void gotoAzRef() {
       // We're on the sensor, so get off it.
       if (MotorDriverflag) {
         //Run the motor CCW to get off of it
-        driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, SLOW_SPEED);
+        driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, FAST_SPEED);
       } else {
         TCterminal.println("Move telescope in Azimuth CCW to get off of AZ Reference Sensor.");
         TCterminal.println(hitkey);
@@ -124,7 +125,7 @@ void gotoAzRef() {
     if (MotorDriverflag) {
       newdelay(500);
       // Start motor in CW direction
-      driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, SLOW_SPEED);
+      driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED);
     } else {
       TCterminal.println("Move telescope in Azimuth CW to find AZ Reference Sensor.");
       LCDclear();
@@ -265,7 +266,7 @@ void getMagneticNorth() {
       newdelay(10);
 	}
 	// Turn Azimuth motor on going CW around
-	driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, SLOW_SPEED);
+	driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED);
     // Get data points - Assume we are starting at Azimuth = 0
     for (i = 0; i < 3600; i++) {
 	  // wait until we get to the next point
@@ -332,7 +333,7 @@ void setAlEncoderAtHorizon() {
       // We're very close to level now
       if (MotorDriverflag) {
         //Run the motor CCW to get above it
-        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, SLOW_SPEED);
+        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, FAST_SPEED);
       } else {
         printGoAboveHorizon();
       }
@@ -355,7 +356,7 @@ void setAlEncoderAtHorizon() {
       // We're on the sensor, so get off it.
       if (MotorDriverflag) {
         //Run the motor CCW to get above it
-        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, SLOW_SPEED);
+        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, FAST_SPEED);
       } else {
         printGoAboveHorizon();
       }
@@ -605,6 +606,10 @@ void inithardware() { //Set up all the hardware interfaces
   
   // Have to have motor driver set up before we can start initializing the mount
   MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
+  currentAzMtrSpeed = 0;
+  currentAlMtrSpeed = 0;
+  currentAzMtrDir = CW_DIRECTION;
+  currentAlMtrDir = CW_DIRECTION;
   if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     TCterminal.println("Motor driver setup.");
     i2cMotorDriver.settings.commInterface = I2C_MODE;
@@ -615,9 +620,22 @@ void inithardware() { //Set up all the hardware interfaces
       newdelay(500);
     }
     TCterminal.println( "ID matches 0xA9" );
-    //  Check to make sure the driver is done looking for slaves before beginning
+    //  Check to make sure the driver is done looking for peripherals before beginning
     TCterminal.print("Waiting for enumeration...");
     while ( i2cMotorDriver.ready() == false );
+
+    // Check for Azimuth motor inversion
+#ifdef REVERSE_AZIMUTH_MOTOR_DIRECTION
+      while( i2cMotorDriver.busy() ); //Waits until the SCMD is available.
+      i2cMotorDriver.inversionMode(0, 1); //invert Azimuth motor
+#endif
+
+    // Check for Altitude motor inversion
+#ifdef REVERSE_ALTITUDE_MOTOR_DIRECTION
+      while ( i2cMotorDriver.busy() ); //Waits until the SCMD is available.
+      i2cMotorDriver.inversionMode(1, 1); //invert Altitude motor
+#endif
+  
     TCterminal.println("Waiting to enable outputs...");
     while ( i2cMotorDriver.busy() );
     i2cMotorDriver.enable(); //Enables the output driver hardware

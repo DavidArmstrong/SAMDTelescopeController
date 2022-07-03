@@ -230,7 +230,7 @@ DobsonianControlData spData;
 #define CCW_DIRECTION 1
 #define STOP_SPEED 0
 #define SLOW_SPEED 5
-#define FAST_SPEED 31
+#define FAST_SPEED 255
 
 // User variables
 long IRkey; // Record latest raw IR key code, if seen
@@ -325,8 +325,16 @@ Stream *SERIALOUT = &Serial2;
 // */
 #endif
 
+#ifndef SWAP_AZIMUTH_ENCODER_AB
 Encoder RAAZenc( RAAZ_pinA , RAAZ_pinB ); //Incremental Quadrature Encoder for RA/Aximuth
+#else
+Encoder RAAZenc( RAAZ_pinB , RAAZ_pinA ); //Incremental Quadrature Encoder for RA/Aximuth
+#endif
+#ifndef SWAP_ALTITUDE_ENCODER_AB
 Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder for Dec/Altitude
+#else
+Encoder DECALenc( DECAL_pinB , DECAL_pinA ); //Incremental Quadrature Encoder for Dec/Altitude
+#endif
 
 #ifndef __METRO_M4__
 IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
@@ -358,6 +366,8 @@ SCL3300 rockerTilt, tubeTilt; // inclinometers
 boolean rockerTiltPresent, tubeTiltPresent;
 ANSI ansi(&TCterminal); // VT100 support
 boolean AzimuthEncoderInitialized, AltitudeEncoderInitialized;
+int currentAzMtrSpeed, currentAlMtrSpeed;
+int currentAzMtrDir, currentAlMtrDir;
 
 #ifndef __FUNCTIONDECLARATIONS__
 //===============================================
