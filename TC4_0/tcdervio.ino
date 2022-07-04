@@ -10,12 +10,40 @@ void printDegMinSecs(double n) {
   long min = (lsec - (deg * 360000)) / 6000;
   float secs = (lsec - (deg * 360000) - (min * 6000)) / 100.;
   if (sign) TCterminal.print("-");
-  if (abs(deg) < 10) { TCterminal.print("0"); }
+  if (abs(deg) < 10) {
+    TCterminal.print("0");
+  }
   TCterminal.print(deg); TCterminal.print(":");
-  if (abs(min) < 10) { TCterminal.print("0"); }
+  if (abs(min) < 10) {
+    TCterminal.print("0");
+  }
   TCterminal.print(min); TCterminal.print(":");
-  if (abs(secs) < 10) { TCterminal.print("0"); }
+  if (abs(secs) < 10) {
+    TCterminal.print("0");
+  }
   TCterminal.print((int)abs(secs)); TCterminal.print(" ");
+}
+
+void printDegMinSecsLCD(double n) {
+  boolean sign = (n < 0.);
+  if (sign) n = -n;
+  long lsec = n * 360000.0;
+  long deg = lsec / 360000;
+  long min = (lsec - (deg * 360000)) / 6000;
+  float secs = (lsec - (deg * 360000) - (min * 6000)) / 100.;
+  if (sign) LCDprint("-");
+  if (abs(deg) < 10) {
+    LCDprint("0");
+  }
+  LCDprint(deg); LCDprint(":");
+  if (abs(min) < 10) {
+    LCDprint("0");
+  }
+  LCDprint(min); LCDprint(":");
+  if (abs(secs) < 10) {
+    LCDprint("0");
+  }
+  LCDprint((int)abs(secs)); LCDprint(" ");
 }
 
 void printTime(double n) {
@@ -31,11 +59,47 @@ void printTime(double n) {
   print2digitsUSB(abs(secs)); TCterminal.print(" ");
 }
 
+void printTimeLCD(double n) {
+  boolean sign = (n < 0.);
+  if (sign) n = -n;
+  long lsec = n * 3600.0;
+  long deg = lsec / 3600;
+  long min = (lsec - (deg * 3600)) / 60;
+  float secs = (lsec - (deg * 3600) - (min * 60));
+  //if (sign) TCterminal.print("-");
+  print2digitsLCD(deg); LCDprint(":");
+  print2digitsLCD(min); LCDprint(":");
+  print2digitsLCD(abs(secs)); LCDprint(" ");
+}
+
+void print2digits(int number) {
+  if (number < 10) {
+    oled.print("0"); // print a 0 before if the number is < than 10
+  }
+  oled.print(number);
+}
+
 void print2digitsUSB(int number) {
   if (number < 10) {
     TCterminal.print("0");
   }
   TCterminal.print(number);
+}
+
+void print2digitsLCD(int number) {
+  if (eecharbuf.strunion.LCDi2cflag) {
+    Wire.beginTransmission(LCDi2c_ADR);
+    if (number < 10) {
+      Wire.print("0");
+    }
+    Wire.print(number);
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDpicflag) {
+    if (number < 10) {
+      TC_LCD.print("0");
+    }
+    TC_LCD.print(number);
+  }
 }
 
 boolean TRPLCMP( int n1, int n2, int n3, int n4 ) {
@@ -48,8 +112,8 @@ boolean GETYORN() { // True for Yes, False for No
   do {
     n = KEY();
     flag = ((n == '0') || (n == '1')
-       || (n == 'N') || (n == 'n')
-       || (n == 'Y') || (n == 'y'));
+            || (n == 'N') || (n == 'n')
+            || (n == 'Y') || (n == 'y'));
   } while ( !flag );
   EMIT(n); // echo good input
   return TRPLCMP('Y', '1', 'y', n);
@@ -62,7 +126,9 @@ long GETDDECNUM() {
   return GETnum(PAD); //converted string to long
 }
 
-int GETINUM() { return (int)GETDDECNUM(); }
+int GETINUM() {
+  return (int)GETDDECNUM();
+}
 
 int GETINUM(int n) {
   // read a line from user into buffer, return char count
@@ -80,7 +146,7 @@ long CONVHMS(char *buf) { // return d seconds
   int countdots = 0;
   hmsseconds = hmsmin = hmshours = 0;
   //Assume string is no longer than 20 characters
-  for (x=0; x < 20; x++) {
+  for (x = 0; x < 20; x++) {
     if (buf[x] == '.') {
       //A decimal point means we need to move to the next units
       hmshours = hmsmin;
@@ -113,6 +179,8 @@ long CONVHMS(char *buf) { // return d seconds
       y = (y * 10) + (buf[x] - '0');
     }
   }
+  // The routine will never get here, but the compiler complains anyway
+  return secs;
 }
 
 long INPUTHMS() {
@@ -135,4 +203,3 @@ double GETFDECNUM() {
   len = ACCEPT(PAD, 12); //Get 12 chars max
   return atof(PAD);
 }
-
