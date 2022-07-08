@@ -456,6 +456,10 @@ void updatestatusscreen() {
   }
   
   myAstro.setAltAz(FALTITUDE, FAZIMUTH);
+  // Refraction correction
+  if (BMEpresent && eecharbuf.strunion.RFLAG && (azimuthchanged || altitudechanged)) {
+    myAstro.doAntiRefractionF(FPINHG, FTEMPF);
+  }
   myAstro.doAltAz2RAdec();
   //newdelay(10);
   // print Right Ascension, Declination
@@ -517,6 +521,10 @@ void updatestatusscreen() {
     case STAYFUNC: myAstro.setRAdec(FRA, FDEC); break;
   }
   myAstro.doRAdec2AltAz();
+  // Refraction correction
+  if (BMEpresent && eecharbuf.strunion.RFLAG) {
+    myAstro.doRefractionF(FPINHG, FTEMPF);
+  }
   ftmp = myAstro.getAzimuth();
   if (TAZIMUTH != ftmp) {
     TAZIMUTH = ftmp;

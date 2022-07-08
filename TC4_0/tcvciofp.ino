@@ -243,31 +243,12 @@ void RESETdisplayFLAG() {
 boolean Displayquestion() {
   return !displayFLAG;
 }
-void SETPRECESSFLAG() {
-  PFLAG = true;
-}
-void RESETPRECESSFLAG() {
-  PFLAG = false;
-}
-boolean PRECESSquestion() {
-  return PFLAG;
-}
-void SETREFRACTFLAG() {
-  RFLAG = true;
-}
-void RESETREFRACTFLAG() {
-  RFLAG = false;
-}
-boolean REFRACTquestion() {
-  return RFLAG;
-}
 void SETERRFLAG() {
   ERRFLAG = true;
 }
 void RESETERRFLAG() {
   ERRFLAG = false;
 }
-
 
 /* (This was lifted from a web blog - somewhere, then heavily modified)
   //    int len;

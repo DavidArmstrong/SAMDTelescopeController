@@ -1,6 +1,6 @@
-Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics Sketch
-By David Armstrong, July 2022
-See MIT LICENSE.md file
+Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics Sketch<br>
+By David Armstrong, July 2022<br>
+See MIT LICENSE.md file<br>
 ==================================================================
 
 This Sketch is designed to be used as a precursor sketch to TC4_0,
@@ -16,11 +16,11 @@ library can be downloaded from.
 
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
-This application requres a SAMD based processor:
+This application requres a SAMD based processor:<br>
 Option 1: Sparkfun Redboard Turbo - similar to Arduino Zero - based on SAMD21
-https://www.sparkfun.com/products/14812
+https://www.sparkfun.com/products/14812 <br>
 Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point)
-https://www.adafruit.com/product/3382
+https://www.adafruit.com/product/3382 <br>
 Note: Any SAMD processor Arduino compatible board should work to some degree.
 
 On a Windows computer, you can use the terminal program Tera-Term to access the board via USB.

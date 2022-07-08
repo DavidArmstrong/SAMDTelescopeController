@@ -87,7 +87,7 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 #include <SerLCD.h> // https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library
 #include <SFE_MicroOLED.h>  // https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
 #include "ansi.h" // https://github.com/RobTillaart/ANSI
-#include <SparkFun_u-blox_GNSS_Arduino_Library.h> // http://librarymanager/All#SparkFun_u-blox_GNSS
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> // https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
 
 #include <Adafruit_INA219.h> // https://github.com/adafruit/Adafruit_INA219
 #include "SparkFunBME280.h" // https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
@@ -410,6 +410,8 @@ void setup() {
   if (!rockerTilt.begin(SPI_SS1)) {
     TCterminal.print("not ");
     Serial2.print("not ");
+  } else {
+	rockerTilt.powerDownMode();
   }
   TCterminal.println("detected.");
   Serial2.println("detected.");
@@ -432,6 +434,7 @@ void setup() {
     }
     TCterminal.println(" Mode 1.");
     Serial2.println(" Mode 1.");
+	tubeTilt.powerDownMode();
   } else {
     TCterminal.println("not detected.");
     Serial2.println("not detected.");
