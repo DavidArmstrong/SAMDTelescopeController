@@ -55,7 +55,8 @@ void eepromDefaults() {
   //DSTFLAG = eecharbuf.strunion.DSTFLAG;
   // Assume Demo mode on initial boot
   eecharbuf.strunion.enableRealHwInit = false;
-  // Motor Direction flags
+  // Offset of Azimuth Encoder Range from measured Magnetic North
+  AzimuthMagneticEncoderOffset = 0L;
   LCDbrightness = 0x9D; // Default LCD backlight brightness is MAX
 }
 
@@ -252,45 +253,80 @@ void measureAZrange() {
 void getMagneticNorth() {
   // Use a magnetic compass to figure out the offset between the current
   // Azimuth zero reference point, and Magnetic North
-  int xpower = 3;
-  int order = 3;
-  double x[3600], y[3600];
+  int order = 1;
+  double x[3600], y[3600], n;
+  double x0[3600], y0[3600], n0;
   double coeffs[order+1];
   char buf[100];
-  long i;
+  int i, j, max, min, guessNorth;
   
-  // We only do this if we are using Motors so as to avoid magnetic nouse
+  // We only do this if we are using Motors so as to avoid magnetic noise
   if (MotorDriverflag && (getMagCompassPresent() || HMC6343MagCompasspresent || MMC5983MAMagCompasspresent)) {
 	if (getMagCompassPresent()) {
 	  HMC6352.Wake();
       newdelay(10);
 	}
+	// We start with a game to get a 'full' circle in Azimuth
+	driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, FAST_SPEED); // Go backwards past zero point
+	while (RAAZenc.read() > 0L) ; // wait until past it
+	driveMotorStop(AZIMUTH_MOTOR); // Stop the motor
 	// Turn Azimuth motor on going CW around
 	driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED);
-    // Get data points - Assume we are starting at Azimuth = 0
+	while (RAAZenc.read() < 0L) ; // wait until we reach zero
+    // GO! - Get data points - Assume we are starting at Azimuth = 0
+	y[3599] = 0.;
     for (i = 0; i < 3600; i++) {
 	  // wait until we get to the next point
-	  while ((RAAZenc.read() * 3600 / RRAAZ) % 3600 != 0) ;
+	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L != 0L) ;
 	  x[1] = (double) RAAZenc.read();
 	  if (getMagCompassPresent()) y[i] = (double) HMC6352.GetHeading();
 	  if (MMC5983MAMagCompasspresent) y[i] = getMMC5983MagCompassHeading();
-	  while (RAAZenc.read() % 3600 == 0) ; // wait until off this point
+	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L == 0L) ; // wait until off this point
 	}
 	driveMotorStop(AZIMUTH_MOTOR); // Stop the motor
 	// Now we most likely have a sawtooth pattern of magnetic readings
 	// Need to move the data points around so it's more-or-less a line
-	
-    int ret = fitCurve(order, sizeof(y)/sizeof(double), x, y, sizeof(coeffs)/sizeof(double), coeffs);
+	// Start by finding the max and min magnetic compass points in the array
+	max = 0;
+	min = 3600;
+	for (i = 0; i < 3600; i++) {
+      if (y[i] > y[max]) max = i;
+	  if (y[i] < y[min]) min = i;
+	}
+	// We guess that average between min and max is where magnetic North is
+	guessNorth = (max + min) / 2;
+	// And shift the data arrays accordingly so we can do a reasonable curve fit
+    for (i = 0; i < 3599; i++) {
+      j = i + guessNorth;
+	  if (j > 3599) {
+        j -= 3600;
+	  }
+	  y0[i] = y[j]; // Magnetic Compass reading
+	  x0[i] = x[j]; // Encoder position
+	}
+	TCterminal.print("Needed to shift array by about ");
+	TCterminal.print(guessNorth * (RRAAZ / 3600L));
+	TCterminal.println(" encoder counts");
+	// And now we do the curve fit
+    int ret = fitCurve(order, sizeof(y0)/sizeof(double), x0, y0, sizeof(coeffs)/sizeof(double), coeffs);
   
-    if (ret == 0){ //Returned value is 0 if no error
+    if (ret == 0) { //Returned value is 0 if no error
       uint8_t c = 'a';
       TCterminal.println("Coefficients are");
-      for (int i = 0; i < sizeof(coeffs)/sizeof(double); i++){
+      for (int i = 0; i < sizeof(coeffs)/sizeof(double); i++) {
         snprintf(buf, 100, "%c=",c++);
         TCterminal.print(buf);
         TCterminal.print(coeffs[i]);
         TCterminal.print('\t');
       }
+	  // Save Magnetic offset
+      // Later, it will be used with Magnetic Variation, and current Azimuth range
+	  // So that location '0' is True North
+	  AzimuthMagneticEncoderOffset = ((float)guessNorth * ((float)RRAAZ / 3600.)) + (-coeffs[1] / coeffs[0]);
+    } else {
+	  TCterminal.println("Error in computing Curve fit of data");
+	  TCterminal.println("Making a guess of where Magnetic North is in Encoder counts.");
+	  AzimuthMagneticEncoderOffset = guessNorth * (RRAAZ / 3600L);
     }
   }
 }
@@ -786,7 +822,7 @@ void INIT() {
   }
   // 4. Get True North location in Azimuth, if possible
   // - Update Azimuth zero location
-  
+  getMagneticNorth();
   // 5. Get Horizon location in Altitude
   // 6. Get Range in Altitude by finding Zenith
   TCterminal.println("");
@@ -1112,7 +1148,7 @@ void doCommand() {
       TCterminal.print(" Right Ascension = ");
       Ltmp = INPUTHMS(); TCterminal.println("");
     } while (Ltmp < 0 || Ltmp > (24L * 3600L));
-    if (tmp != -1L) {
+    if (Ltmp != -1L) {
       TRA = (double)Ltmp / 3600.; // Convert RA to hours
     }
     TCterminal.println(" ");
@@ -1121,13 +1157,27 @@ void doCommand() {
     do {
       TCterminal.print(" Declination = ");
       LCDline1(); LCDprint("Dec=");
-      Ltmp = INPUTHMS();
-      TCterminal.println("");
+      Ltmp = INPUTHMS(); TCterminal.println("");
     } while (Ltmp < (-90L * 3600L) || Ltmp > (90L * 3600L));
-    if (tmp != -1L) {
+    if (Ltmp != (-90L * 3600L)) {
       TDEC = (double)Ltmp / 3600.; // Convert Declination to hours
       COMMAND = '9' - '0';
     }
+	double Dtmp = 0.;
+	if (eecharbuf.strunion.PFLAG) {
+      do {
+        LCDclear();  LCDline3(); LCDprint("Epoch=");
+        TCterminal.print(" Epoch (year) = ");
+        Dtmp = GETFDECNUM(); TCterminal.println("");
+      } while (Dtmp < 1600. || Ltmp > (2200.));
+	  myAstro.setGMTdate((long)Dtmp,1,1);
+      myAstro.setRAdec(TRA, TDEC);
+	  myAstro.doPrecessTo2000();
+      myAstro.setGMTdate(GRYEAR, GRMONTH, GRDAY);
+      myAstro.doPrecessFrom2000();
+      TRA = myAstro.getRAdec();
+      TDEC = myAstro.getDeclinationDec();
+	}
     printstatusscreen();
   } else if ( num == '.') {
     // Star
@@ -1162,6 +1212,12 @@ void doCommand() {
       TRA = myObjects.getRAdec();
       TDEC = myObjects.getDeclinationDec();
       COMMAND = FNDARB;
+	  if (eecharbuf.strunion.PFLAG) {
+        myAstro.setRAdec(TRA, TDEC);
+        myAstro.doPrecessFrom2000();
+        TRA = myAstro.getRAdec();
+        TDEC = myAstro.getDeclinationDec();
+	  }
     }
     printstatusscreen();
   } else if (num == '-') {
@@ -1192,6 +1248,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '2') {
@@ -1220,6 +1282,12 @@ void doCommand() {
           TRA = myObjects.getRAdec();
           TDEC = myObjects.getDeclinationDec();
           COMMAND = FNDOBJECT;
+		  if (eecharbuf.strunion.PFLAG) {
+            myAstro.setRAdec(TRA, TDEC);
+            myAstro.doPrecessFrom2000();
+            TRA = myAstro.getRAdec();
+            TDEC = myAstro.getDeclinationDec();
+	      }
         }
       }
     }
@@ -1235,6 +1303,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '5') {
@@ -1249,6 +1323,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '6') {
@@ -1263,6 +1343,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     printstatusscreen();

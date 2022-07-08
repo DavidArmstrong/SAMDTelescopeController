@@ -17,8 +17,8 @@
 //#define REVERSE_AZIMUTH_MOTOR_DIRECTION
 //#define REVERSE_ALTITUDE_MOTOR_DIRECTION
 
-// Default Time Zone must be a real number, usually in the range -12.0 to +12.0
-// This is in hours offset from GMT
+/* Default Time Zone must be a real number, usually in the range -12.0 to +12.0
+// This is in hours offset from GMT */
 #define DEFAULT_TIME_ZONE    -8.0    /* PST */
 // Daylight saving usage - Auto figures out if DST is active or not in US locations only
 #define DEFAULT_USE_DST_AUTO_IN_US    true
@@ -34,8 +34,8 @@
 
 // Terminal Display Output - Pick one - If at all possible, use Serial2
 //#define TCterminal Serial
-// Serial2 uses PINS D2-TX, D3-RX for SAMD21; PINS D7-TX, D4-RX for SAMD51
-// This can be set to go to an Xbee module for wireless interaction
+/* Serial2 uses PINS D2-TX, D3-RX for SAMD21; PINS D7-TX, D4-RX for SAMD51
+// This can be set to go to an Xbee module for wireless interaction */
 #define TCterminal Serial2
 
 /* LCD output - Serial1 is recommended for either PIC LCD or AVR LCD

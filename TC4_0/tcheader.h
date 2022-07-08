@@ -107,7 +107,7 @@ const int BME280_ADR = 0x77;
 #include <SerLCD.h> //Serial LCD library: https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library
 #include <SFE_MicroOLED.h>  // SFE_MicroOLED library https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
 #include "ansi.h" // VT100 support https://github.com/RobTillaart/ANSI
-#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_u-blox_GNSS
+#include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
 
 #include <Adafruit_INA219.h> //Power/current/voltage monitor https://github.com/adafruit/Adafruit_INA219
 #include "SparkFunBME280.h" //Temperature, Pressure, Humidity sensor https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
@@ -244,8 +244,6 @@ boolean displayFLAG; // Set to true if display option has been selected
 boolean AUTOSTARFLAG;  // Set to true if system can offer to select alignment star
 boolean INITFLAG;  // Telescope mount initialized flag
 boolean TIMEFLAG;  // Time initialized flag
-boolean PFLAG;  // Precession flag
-boolean RFLAG;  // True if Refraction calculations enabled
 boolean DSTFLAG;  // Set to true if Daylight Savings time is in effect
 boolean DSTAUTOFLAG; // Set to true if we automatically compute if DST is in effect - US Only
 int TZONE;  // System Time Zone offset from GMT
@@ -281,6 +279,7 @@ double FELAT;  // Equatorial Mount Latitude
 double FMAGHDG; // Magnetic Compass heading
 float busvolts, current_mA; // Bus voltage, current as measured by INA219
 float magVariation; // Magnetic Declination or Variation
+long AzimuthMagneticEncoderOffset;
 int LCDbrightness;
 
 // need to make auto star select table
@@ -404,12 +403,6 @@ boolean TCIquestion();
 void SETdisplayFLAG();
 void RESETdisplayFLAG();
 boolean Displayquestion();
-void SETPRECESSFLAG();
-void RESETPRECESSFLAG();
-boolean PRECESSquestion();
-void SETREFRACTFLAG();
-void RESETREFRACTFLAG();
-boolean REFRACTquestion();
 void SETERRFLAG();
 void RESETERRFLAG();
 int ACCEPT(char *buf, int limit);
