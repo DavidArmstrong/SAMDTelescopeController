@@ -1,14 +1,15 @@
 # SAMDTelescopeController
+
 Arduino SAMD51-based Telescope Controller 4.00.00
 
 By David Armstrong, July 2022<br>
 See MIT LICENSE file<br>
-=================================================================
+========================================================================
 
-This repository implements one of many possible design scenarios for a Telescope Controller, using the
-Arduino IDE as a development environment.  It's purpose is to allow me, personally,
+
+This repository implements one of many possible design scenarios for a Telescope Controller, 
+using the Arduino IDE as a development environment.  It's purpose is to allow me, personally,
 to use my telescope to look at stuff, instead of spending a lot of time setting it up.
-(It can be used just as Digital Setting circles with no motors, or motors can be added later.)
 
 I'm making this available for others to use as a reference in designing their own systems.  As
 such, feel free to clone it and change as your needs dictate.
@@ -129,3 +130,4 @@ proven record in the field, literally.  However, that code was written in a
 previous millenium.  Such ancient coding is considered painful to look at by
 today's standards.  You are welcome to rewrite it, but I don't have the time.
 There was enough rewriting done for the new system.
+
