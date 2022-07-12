@@ -1,4 +1,6 @@
-Arduino SAMD-based Telescope Controller 4.00.00<br>
+# SAMDTelescopeController
+Arduino SAMD51-based Telescope Controller 4.00.00
+
 By David Armstrong, July 2022<br>
 See MIT LICENSE.md file<br>
 =============================
@@ -19,16 +21,14 @@ I've also included an Eagle schematic of how to construct various interfaces.
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
 
-This application requres a SAMD based processor.  Suggestions:<br>
-Option 1: Sparkfun Redboard Turbo - similar to Arduino Zero - based on SAMD21<br>
-https://www.sparkfun.com/products/14812 <br>
-Option 2: Adafruit Metro M4 - based on SAMD51 (Preferred at this point, due to memory/speed requirements)<br>
+This application requires a SAMD51 based processor.  Suggestions:<br>
+Option 1: Adafruit Metro M4 - based on SAMD51 (Used in my tests)<br>
 https://www.adafruit.com/product/3382 <br>
-Option 3: Sparkfun Micro-Mod system with SAMD51 processor<br>
+Option 2: Sparkfun Micro-Mod system with SAMD51 processor<br>
 https://www.sparkfun.com/products/16791 <br>
 https://www.sparkfun.com/products/16885 
 
-Note: Any SAMD processor Arduino compatible board should work to some degree.
+Note: Any SAMD51 processor Arduino compatible board should work to some degree.
 
 If the sketch compiles and loads, it has the needed libraries.  However,
 if one get an error, the code should at least give a URL for where each
@@ -38,8 +38,8 @@ For the Metro M4 board with the SAMD51 processor, it is also recommended to sele
 compile speed option on the Arduino IDE.  This is located at: Tools > Optimize > Fastest, and is
 available only after selecting the Metro M4 as the target board.  This 
 doesn't make the compile time shorter, but it does make the sketch run faster on the processor.
-We do this on the SAMD51 because there is not a memory constraint on that system, as there is
-with the SAMD21. (We swap some memory space for speed of execution increases.)
+We do this on the SAMD51 because there is not a memory constraint on that system. (We swap 
+some memory space for speed of execution increases.)
 
 You may also be required to modify the default values defined at the top of the TC4_0.ino sketch,
 based on the hardware setup of your telescope system.
@@ -111,8 +111,8 @@ Consider these options:
 
 5. Add in Xbee modules to go wireless.
 Screen output can be sent to Serial2 in the code, which will send UART
-data to D2(Tx)/D3 (Rx) for SAMD21, and D4(Rx)/D7(Tx) for SAMD51.  Using Serial2 
-will be faster than relying on the SerialUSB/Serial port, which is the default.  
+data to D4(Rx)/D7(Tx) for the SAMD51.  Using Serial2 
+may faster than relying on the Serial port, which is the default.  
 The option is enabled at the top of file TC4_0.ino.  The other end of the XBee connection should have a VT100 compatible terminal emulator program.  (I use Tera-Term for Windows 10.)
 
 6. Remove requirement for a laptop with:
@@ -126,7 +126,7 @@ I2C BME280 Barometric Pressure, Temperature, Humidity Sensor (IIC address 0x77)
 8. Initial telescope orientation to North:
 (Not needed at all for a permanently mounted telescope.  See #13 below.  It's an aid
 for portable telescopes, as it can help you find alignment stars when setting up.)
-I2C Magnetic Compass (HMC6352 IIC address 0x21) OR (HMC6343 IIC address 0x19)
+I2C Magnetic Compass (HMC6352 IIC address 0x21) 
 OR (MMC5983MA IIC address 0x30 - recommended)
 
 9. Account for mechanical level of telescope:
@@ -222,23 +222,18 @@ Note: Without it, one is left with having to manually determine level the of the
 ====================================<br>
 Software: (Only needed if you want to compile, modify, and/or hork the system.)
 
-You MUST set up the Arduino IDE precisely as listed on the Sparkfun Turbo Hookup Guide: https://learn.sparkfun.com/tutorials/redboard-turbo-hookup-guide <br>
-(This includes versions listed for the SAMD libraries, etc.)
-
-Adafruit has a guide for the Metro M4 as well:<br>
+You MUST set up the Arduino IDE precisely as listed on the Adafruit guide for the Metro M4:<br>
 https://learn.adafruit.com/adafruit-metro-m4-express-featuring-atsamd51
 
 Arduino Libraries:<br>
-RTCZero by Arduino https://www.arduino.cc/en/Reference/RTC (SAMD21) <br>
 RTC by Seeed Studio https://github.com/Seeed-Studio/Seeed_Arduino_RTC (SAMD51) <br>
 Adafruit INA219 by Adafruit https://github.com/adafruit/Adafruit_INA219 <br>
 extEEPROM by Jack Christensen https://github.com/PaoloP74/extEEPROM <br>
-IRremote by shiffiff https://github.com/z3t0/Arduino-IRremote (SAMD21) <br>
 https://github.com/cyborg5/IRLib2 (SAMD51)
 
 Sparkfun BME280 by Sparkfun Electronics https://github.com/sparkfun/SparkFun_BME280_Arduino_Library <br>
 Sparkfun Micro OLED Breakout by Sparkfun Electronics https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library <br>
-Sparkfun Ublox Arduino Library by Sparkfun Electronics http://librarymanager/All#SparkFun_u-blox_GNSS <br>
+Sparkfun Ublox Arduino Library by Sparkfun Electronics https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library <br>
 Murata SCL3300 Library https://github.com/DavidArmstrong/Arduino-SCL3300
 
 Other Libraries:<br>
@@ -302,41 +297,3 @@ D. (Ed.)
 
 14. List of Bright Stars. https://en.wikipedia.org/wiki/List_of_brightest_stars
 
-====================================<br>
-History:  (Why is this Version 4?)
-
-Version 1.0 began on that wide computer paper in 1982.  The initial
-hardware was built in 1983, using a 6809 CPU at 1 MHz and 2K RAM with
-64K of EPROM.  (Only 61K was available though.)
-The software really didn't get to the point of being usable
-until 1995 or so.  The original code was in assembly and FIG-Forth.
-Version 2.0 was built in 1998 with the 68B09, so it could run at 2 MHz, with
-the same 2K RAM and a larger 128K EPROM.  GAL chips were used to cut down on
-chip count and allow full encoder resolution.
-
-Version 3.0 was planned around 2003, but was never completed.  It
-was based on using a Freescale HCS12XE512 MCU, running at 50 MHz.  However, when time
-finally became available for software development, it was EOL (2018).  
-That, and the fact that my development tools would not now work under 
-Windows 10, meant I could either try rewriting my tools, or go to 
-'something else'.  Several attempts at updating my Visual C++ IDE ended 
-in extreme frustration.  (Thank you Microsoft!)  It was time for 'something else'.
-
-Version 4.0 was decided on when I got my hands on a Sparkfun Redboard Turbo.
-I'd always thought the Arduino line of stuff wasn't up to the task, but
-this board proved me wrong.  It had real dev tools.  And it had a lot of
-libraries that were tested, extensive, and readily available.  Software tool availability
-often ends up determining what hardware will be used for a system.
-
-As the software got closer to completion, it became evident that the SAMD21 memory space
-was going to reach its' limit.  CPU usage went high as well.  The decision was made
-to migrate to the SAMD51, which had twice the flash space, and nearly three times the 
-raw speed. Hence the use of the Adafruit Metro M4 board. And I could still use the same
-Arduino form factor protoboards I constructed that plug into the headers on those boards.
-
-You will notice some use of 'caps' in the current source.  That's because the
-Arduino code is a translation of the original FIG-Forth code, which had a 
-proven record in the field, literally.  However, that code was written in a
-previous millenium.  Such ancient coding is considered painful to look at by
-today's standards.  You are welcome to rewrite it, but I don't have the time.
-There was enough rewriting done for the new system.

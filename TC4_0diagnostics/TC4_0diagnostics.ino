@@ -1,4 +1,4 @@
-/* Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics - June 2022
+/* Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics - July 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO
@@ -8,8 +8,11 @@
 
 //****** Update the Defines in this section, as needed ********
 
-//If not using the Metro M4, comment out the next line
-#define __METRO_M4__
+/* NOTE: In the library file at IRLibProtocols\IRLibSAMD51.h
+// You must change lines 18-19 as follows:
+//#define IR_TCn 3
+#define IR_TCn 4
+// Otherwise, the application will NOT compile */
 
 // Set to 'true' for older PIC based LCD, 'false' for newer AVR based LCD
 #define LCDpicflag true
@@ -24,7 +27,7 @@
 
 //****** End of User Defined Section ******************************************
 
-// Account for Redboard Turbo/SAMD21 Weirdness with SerialUSB
+// Account for Weirdness with SerialUSB
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 #define Serial SERIAL_PORT_USBVIRTUAL
 #endif
@@ -62,7 +65,7 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 //===========================================
 // Test required library installation
 #ifndef __Libraries__
-#include <Encoder.h> // https://www.pjrc.com/teensy/td_libs_Encoder.html
+#include <Encoder.h> // https://github.com/PaulStoffregen/Encoder
 #include "wiring_private.h"
 #include <Arduino.h>
 #include "pins_arduino.h"
@@ -70,12 +73,8 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 #include <stdint.h>
 #include <string.h>
 
-#ifndef __METRO_M4__
-#include <RTCZero.h> // https://www.arduino.cc/en/Reference/RTC
-#else
 #include "RTC_SAMD51.h" // https://github.com/Seeed-Studio/Seeed_Arduino_RTC
 #include "DateTime.h"
-#endif
 
 #include <math.h>
 #include "SiderealPlanets.h" // https://github.com/DavidArmstrong/SiderealPlanets
@@ -92,9 +91,6 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 #include <Adafruit_INA219.h> // https://github.com/adafruit/Adafruit_INA219
 #include "SparkFunBME280.h" // https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
 
-#ifndef __METRO_M4__
-#include <IRremote.h> // https://github.com/z3t0/Arduino-IRremote (Version 2.8.1 ONLY)
-#else
 #include <IRLibDecodeBase.h> // https://github.com/cyborg5/IRLib2 
 #include <IRLib_P01_NEC.h>   // Now include only the protocols you wish
 #include <IRLib_P02_Sony.h>  // to actually use. The lowest numbered
@@ -108,16 +104,14 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 IRdecode irdecoder;
 // Include a receiver either this or IRLibRecvPCI or IRLibRecvLoop
 #include <IRLibRecv.h>
-#endif
 
 #include "SCMD.h" // https://github.com/sparkfun/Serial_Controlled_Motor_Driver
 #include "SCMD_config.h"
 
 // Magnetic Compass Libraries
 #include <HMC6352.h> // https://github.com/funflin/HMC6352-Arduino-Library
-#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
-#include <SparkFun_MMC5983MA_Arduino_Library.h> // http://librarymanager/All#SparkFun_MMC5983MA
-// https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
+//#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
+#include <SparkFun_MMC5983MA_Arduino_Library.h> // https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
 
 #include <SPI.h>
 #include "SCL3300.h" // https://github.com/DavidArmstrong/Arduino-SCL3300
@@ -125,16 +119,12 @@ IRdecode irdecoder;
 //============================
 // Hareware/Software Declarations
 // Serial2 is second UART port for Xbee wireless ANSI terminal, as an alternative to Serial
-#ifndef __METRO_M4__
-Uart Serial2 (&sercom2, 3, 2, SERCOM_RX_PAD_1, UART_TX_PAD_2);
-#else
 #define PIN_SERIAL2_RX 4    /* PB13 */
 #define PAD_SERIAL2_RX (SERCOM_RX_PAD_1)
 #define PIN_SERIAL2_TX 7    /* PB12 */
 #define PAD_SERIAL2_TX (UART_TX_PAD_0)
 Uart Serial2( &sercom4, PIN_SERIAL2_RX, PIN_SERIAL2_TX, PAD_SERIAL2_RX, PAD_SERIAL2_TX );
 Stream *SERIALOUT = &Serial2;
-#endif
 
 #ifndef SWAP_AZIMUTH_ENCODER_AB
 Encoder RAAZenc( RAAZ_pinA , RAAZ_pinB ); //Incremental Quadrature Encoder for RA/Aximuth
@@ -147,13 +137,9 @@ Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder fo
 Encoder DECALenc( DECAL_pinB , DECAL_pinA ); //Incremental Quadrature Encoder for Dec/Altitude
 #endif
 
-#ifndef __METRO_M4__
-IRrecv irrecv(RECV_PIN); //IR detector - Used for TV Remote input
-RTCZero rtczero; // Sparkfun Redboard Turbo internal Real Time Clock
-#else
 IRrecv irrecv(RECV_PIN);  //pin number for the receiver
 RTC_SAMD51 rtczero;
-#endif
+
 const int PIN_RESET = 44;
 #define DC_JUMPER 1
 MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
@@ -176,7 +162,7 @@ boolean MotorDriverflag;
 SCMD i2cMotorDriver; //Serial Controlled Motor Driver
 
 double FMAGHDG; // Magnetic Compass heading
-SFE_HMC6343 dobHMC6343; // Declare the compass object
+//SFE_HMC6343 dobHMC6343; // Declare the compass object
 SFE_MMC5983MA MMC5983MAmag;
 WMM_Tinier myDeclination;
 SCL3300 rockerTilt, tubeTilt; // inclinometers
@@ -185,9 +171,6 @@ ANSI ansi2(&Serial2); // VT100 support
 #endif
 
 // Function declarations
-#ifndef __METRO_M4__
-void SERCOM2_Handler() { Serial2.IrqHandler(); }
-#else
 // And for SAMD51 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
@@ -196,7 +179,6 @@ void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
-#endif
 
 void newdelay( long interval ) {
   // delay without blocking
@@ -212,7 +194,6 @@ void newdelay( long interval ) {
 }
 
 void TERMclear() {
-  //TCterminal.print(" ");
   //Clear VT100 screen and home cursor
   ansi.clearScreen();
   ansi2.clearScreen();
@@ -292,15 +273,9 @@ void setup() {
   Wire.begin(); // I2C init
   Serial1.begin(9600); // serial 4x20 LCD display
 
-  #ifndef __METRO_M4__
-  // For SAMD21 Serial2
-  pinPeripheral(2, PIO_SERCOM); // Define Pins for Serial2 UART port
-  pinPeripheral(3, PIO_SERCOM_ALT);
-  #else
   // For SAMD51 Serial2
   pinPeripheral(4, PIO_SERCOM); // Define Pins for Serial2 UART port
   pinPeripheral(7, PIO_SERCOM);
-  #endif
   Serial2.begin(9600);
   newdelay(1600); // Give time for Serial2 to init
 
@@ -450,11 +425,11 @@ void setup() {
   if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
     TCterminal.println("HMC6352 Magnetic Compass not detected.");
     Serial2.println("HMC6352 Magnetic Compass not detected.");
-    // Initialize the HMC6343 and verify its physical presence
+    /* Initialize the HMC6343 and verify its physical presence
     if (dobHMC6343.init()) {
       TCterminal.println("HMC6343 Magnetic Compass detected.");
       Serial2.println("HMC6343 Magnetic Compass detected.");
-    }
+    } // */
     if (MMC5983MAmag.begin()) {
       TCterminal.println("MMC5983MA Magnetic Compass detected.");
       Serial2.println("MMC5983MA Magnetic Compass detected.");
@@ -606,7 +581,7 @@ void setup() {
   if (motorDetected) {
     TCterminal.println("Waiting to enable outputs...");
     Serial2.println("Waiting to enable outputs...");
-	  while ( i2cMotorDriver.ready() == false );
+    while ( i2cMotorDriver.ready() == false );
     // Check for Azimuth motor inversion
 #ifdef REVERSE_AZIMUTH_MOTOR_DIRECTION
     while( i2cMotorDriver.busy() ); //Waits until the SCMD is available.
@@ -620,22 +595,22 @@ void setup() {
     while ( i2cMotorDriver.busy() );
     i2cMotorDriver.enable(); //Enables the output driver hardware
 	
-	  TCterminal.println("\nHit Key to drive Azimuth motor CW for 10 seconds.");
+    TCterminal.println("\nHit Key to drive Azimuth motor CW for 10 seconds.");
     Serial2.println("\nHit Key to drive Azimuth motor CW for 10 seconds.");
-	  KEY();
-	  i2cMotorDriver.setDrive( AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED );
-	  newdelay(10000);
-	  i2cMotorDriver.setDrive( AZIMUTH_MOTOR, 0, 0 );
-	  TCterminal.println("If motor moved CCW, uncomment line #define REVERSE_AZIMUTH_MOTOR_DIRECTION");
+    KEY();
+    i2cMotorDriver.setDrive( AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED );
+    newdelay(10000);
+    i2cMotorDriver.setDrive( AZIMUTH_MOTOR, 0, 0 );
+    TCterminal.println("If motor moved CCW, uncomment line #define REVERSE_AZIMUTH_MOTOR_DIRECTION");
     Serial2.println("If motor moved CCW, uncomment line #define REVERSE_AZIMUTH_MOTOR_DIRECTION");
-	
-	  TCterminal.println("\nHit Key to drive Altitude motor towards Zenith for 10 seconds.");
+
+    TCterminal.println("\nHit Key to drive Altitude motor towards Zenith for 10 seconds.");
     Serial2.println("\nHit Key to drive Altitude motor towards Zenith for 10 seconds.");
-	  KEY();
-	  i2cMotorDriver.setDrive( ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED );
-	  newdelay(10000);
-	  i2cMotorDriver.setDrive( ALTITUDE_MOTOR, 0, 0 );
-	  TCterminal.println("If motor moved towards Horizon, uncomment line #define REVERSE_ALTITUDE_MOTOR_DIRECTION");
+    KEY();
+    i2cMotorDriver.setDrive( ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED );
+    newdelay(10000);
+    i2cMotorDriver.setDrive( ALTITUDE_MOTOR, 0, 0 );
+    TCterminal.println("If motor moved towards Horizon, uncomment line #define REVERSE_ALTITUDE_MOTOR_DIRECTION");
     Serial2.println("If motor moved towards Horizon, uncomment line #define REVERSE_ALTITUDE_MOTOR_DIRECTION");
   }
 
@@ -645,21 +620,8 @@ void setup() {
   Serial2.println("\nIR Remote Receiver functionality check");
   TCterminal.println(hitkey);
   Serial2.println(hitkey);
-  #ifdef __METRO_M4__
-  irrecv.enableIRIn(); // Start the receiver
-  #endif
+
   do {
-    #ifndef __METRO_M4__
-    if (irrecv.decode()) {
-      // Return an IR input char
-      xn = irrecv.results.value;
-      if (xn != 0xffffffffL) {
-        TCterminal.println(xn, HEX);
-        Serial2.println(xn, HEX);
-      }
-      irrecv.resume(); // Receive the next value
-    }
-	  #else
     if (irrecv.getResults()) {
       irdecoder.decode();  //Decode it
       xn = irdecoder.value;
@@ -669,7 +631,6 @@ void setup() {
       }
       irrecv.enableIRIn(); // Receive the next value
     }
-    #endif
   } while (!(TCterminal.available() || Serial2.available()));
   KEY();
 
