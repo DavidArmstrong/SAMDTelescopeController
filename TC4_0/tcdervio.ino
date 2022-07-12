@@ -1,5 +1,9 @@
-// TCDERVIO
-// Telescope Controller 4.0 - Derived I/O functions
+/* Telescope Controller 4.00.00 - Derived I/O functions
+// September 2022
+// See MIT LICENSE.md file and ReadMe.md file for essential information
+// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
+
 #include "tcheader.h"
 
 void printDegMinSecs(double n) {

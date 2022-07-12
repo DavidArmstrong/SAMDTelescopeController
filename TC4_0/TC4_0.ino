@@ -1,9 +1,15 @@
-/* Arduino SAMD-based Telescope Controller 4.00.00 - September 2022
+/* Arduino SAMD51-based Telescope Controller 4.00.00 - September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
-//****** Update the Defines in this section, as needed ********
+/****** Update the Defines in this section, as needed ********
+
+/* NOTE: In the library file at IRLibProtocols\IRLibSAMD51.h
+// You must change lines 18-19 as follows:
+//#define IR_TCn 3
+#define IR_TCn 4
+// Otherwise, the application will NOT compile */
 
 // Encoder count range per axis, if known.  If not, leave defined at 0L
 #define AZIMUTH_ENCODER_RANGE    10000L
@@ -17,25 +23,22 @@
 //#define REVERSE_AZIMUTH_MOTOR_DIRECTION
 //#define REVERSE_ALTITUDE_MOTOR_DIRECTION
 
-// Default Time Zone must be a real number, usually in the range -12.0 to +12.0
-// This is in hours offset from GMT
+/* Default Time Zone must be a real number, usually in the range -12.0 to +12.0
+// This is in hours offset from GMT */
 #define DEFAULT_TIME_ZONE    -8.0    /* PST */
 // Daylight saving usage - Auto figures out if DST is active or not in US locations only
 #define DEFAULT_USE_DST_AUTO_IN_US    true
 #define DEFAULT_USE_DST               false
 
-//If not using the Metro M4, comment out the next line
-#define __METRO_M4__
-
-// Account for Redboard Turbo/SAMD21 Weirdness with SerialUSB
+// Account for Weirdness with SerialUSB
 #if defined(ARDUINO_SAMD_ZERO) && defined(SERIAL_PORT_USBVIRTUAL)
 #define Serial SERIAL_PORT_USBVIRTUAL
 #endif
 
 // Terminal Display Output - Pick one - If at all possible, use Serial2
 //#define TCterminal Serial
-// Serial2 uses PINS D2-TX, D3-RX for SAMD21; PINS D7-TX, D4-RX for SAMD51
-// This can be set to go to an Xbee module for wireless interaction
+/* Serial2 uses PINS D7-TX, D4-RX for SAMD51
+// This can be set to go to an Xbee module for wireless interaction */
 #define TCterminal Serial2
 
 /* LCD output - Serial1 is recommended for either PIC LCD or AVR LCD
@@ -48,6 +51,7 @@
 #include "tcheader.h"
 
 void setup() {
+  SUPC->VREG.bit.SEL = 1; // Save 4 mA on Metro M4 board
   RRAAZ = RDECAL = 0L;
   if (AZIMUTH_ENCODER_RANGE != 0L) RRAAZ = AZIMUTH_ENCODER_RANGE;
   if (ALTITUDE_ENCODER_RANGE != 0L) RDECAL = ALTITUDE_ENCODER_RANGE;

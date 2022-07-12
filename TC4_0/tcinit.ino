@@ -1,12 +1,13 @@
-// TCINIT
-// Telescope Controller 4.0 - Initialization and High level functionality
+/* Telescope Controller 4.00.00 - Initialization and High level functionality
+// September 2022
+// See MIT LICENSE.md file and ReadMe.md file for essential information
+// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
+
 #include "tcheader.h"
 
-// We have to define this function to use the SAMD21 alternate Serial2 pins
-#ifndef __METRO_M4__
-void SERCOM2_Handler() { Serial2.IrqHandler(); }
-#else
-// And for SAMD51 - can't use sercom5, 3, or 2
+// We have to define this function to use the SAMD51 alternate Serial2 pins
+// And for SAMD51 on the Metro M4 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
 // sercom2 - SPI
@@ -14,7 +15,6 @@ void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
-#endif
 
 void eepromDefaults() {
   //
@@ -55,7 +55,9 @@ void eepromDefaults() {
   //DSTFLAG = eecharbuf.strunion.DSTFLAG;
   // Assume Demo mode on initial boot
   eecharbuf.strunion.enableRealHwInit = false;
-  // Motor Direction flags
+  MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
+  // Offset of Azimuth Encoder Range from measured Magnetic North
+  AzimuthMagneticEncoderOffset = 0.;
   LCDbrightness = 0x9D; // Default LCD backlight brightness is MAX
 }
 
@@ -252,45 +254,81 @@ void measureAZrange() {
 void getMagneticNorth() {
   // Use a magnetic compass to figure out the offset between the current
   // Azimuth zero reference point, and Magnetic North
-  int xpower = 3;
-  int order = 3;
-  double x[3600], y[3600];
+  int order = 1;
+  double x[3600], y[3600], n;
+  double x0[3600], y0[3600], n0;
   double coeffs[order+1];
   char buf[100];
-  long i;
+  int i, j, max, min, guessNorth;
   
-  // We only do this if we are using Motors so as to avoid magnetic nouse
-  if (MotorDriverflag && (getMagCompassPresent() || HMC6343MagCompasspresent || MMC5983MAMagCompasspresent)) {
+  // We only do this if we are using Motors so as to avoid magnetic noise
+  if (MotorDriverflag && (getMagCompassPresent() || //HMC6343MagCompasspresent ||
+  MMC5983MAMagCompasspresent)) {
 	if (getMagCompassPresent()) {
 	  HMC6352.Wake();
       newdelay(10);
 	}
+	// We start with a game to get a 'full' circle in Azimuth
+	driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, FAST_SPEED); // Go backwards past zero point
+	while (RAAZenc.read() > 0L) ; // wait until past it
+	driveMotorStop(AZIMUTH_MOTOR); // Stop the motor
 	// Turn Azimuth motor on going CW around
 	driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED);
-    // Get data points - Assume we are starting at Azimuth = 0
+	while (RAAZenc.read() < 0L) ; // wait until we reach zero
+    // GO! - Get data points - Assume we are starting at Azimuth = 0
+	y[3599] = 0.;
     for (i = 0; i < 3600; i++) {
 	  // wait until we get to the next point
-	  while ((RAAZenc.read() * 3600 / RRAAZ) % 3600 != 0) ;
+	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L != 0L) ;
 	  x[1] = (double) RAAZenc.read();
 	  if (getMagCompassPresent()) y[i] = (double) HMC6352.GetHeading();
 	  if (MMC5983MAMagCompasspresent) y[i] = getMMC5983MagCompassHeading();
-	  while (RAAZenc.read() % 3600 == 0) ; // wait until off this point
+	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L == 0L) ; // wait until off this point
 	}
 	driveMotorStop(AZIMUTH_MOTOR); // Stop the motor
 	// Now we most likely have a sawtooth pattern of magnetic readings
 	// Need to move the data points around so it's more-or-less a line
-	
-    int ret = fitCurve(order, sizeof(y)/sizeof(double), x, y, sizeof(coeffs)/sizeof(double), coeffs);
+	// Start by finding the max and min magnetic compass points in the array
+	max = 0;
+	min = 3600;
+	for (i = 0; i < 3600; i++) {
+      if (y[i] > y[max]) max = i;
+	  if (y[i] < y[min]) min = i;
+	}
+	// We guess that average between min and max is where magnetic North is
+	guessNorth = (max + min) / 2;
+	// And shift the data arrays accordingly so we can do a reasonable curve fit
+    for (i = 0; i < 3599; i++) {
+      j = i + guessNorth;
+	  if (j > 3599) {
+        j -= 3600;
+	  }
+	  y0[i] = y[j]; // Magnetic Compass reading
+	  x0[i] = x[j]; // Encoder position
+	}
+	TCterminal.print("Needed to shift array by about ");
+	TCterminal.print(guessNorth * (RRAAZ / 3600L));
+	TCterminal.println(" encoder counts");
+	// And now we do the curve fit
+    int ret = fitCurve(order, sizeof(y0)/sizeof(double), x0, y0, sizeof(coeffs)/sizeof(double), coeffs);
   
-    if (ret == 0){ //Returned value is 0 if no error
+    if (ret == 0) { //Returned value is 0 if no error
       uint8_t c = 'a';
       TCterminal.println("Coefficients are");
-      for (int i = 0; i < sizeof(coeffs)/sizeof(double); i++){
+      for (int i = 0; i < sizeof(coeffs)/sizeof(double); i++) {
         snprintf(buf, 100, "%c=",c++);
         TCterminal.print(buf);
         TCterminal.print(coeffs[i]);
         TCterminal.print('\t');
       }
+	  // Save Magnetic offset
+      // Later, it will be used with Magnetic Variation, and current Azimuth range
+	  // So that location '0' is True North
+	  AzimuthMagneticEncoderOffset = ((float)guessNorth * ((float)RRAAZ / 3600.)) + (-coeffs[1] / coeffs[0]);
+    } else {
+	  TCterminal.println("Error in computing Curve fit of data");
+	  TCterminal.println("Making a guess of where Magnetic North is in Encoder counts.");
+	  AzimuthMagneticEncoderOffset = (float)guessNorth * ((float)RRAAZ / 3600.);
     }
   }
 }
@@ -550,15 +588,15 @@ void inithardware() { //Set up all the hardware interfaces
   newdelay(20);
   FMAGHDG = HMC6352.GetHeading();
   HMC6352.Sleep();
-  HMC6343MagCompasspresent = false; // This is a newer but very expensive upgrade
+  //HMC6343MagCompasspresent = false; // This is a newer but very expensive upgrade
   MMC5983MAMagCompasspresent = false; // This is the latest hardware available
   if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
     MagCompasspresent = false;
-    // Initialize the HMC6343 and verify its physical presence
+    /* Initialize the HMC6343 and verify its physical presence
     if (dobHMC6343.init()) {
       TCterminal.println("HMC6343 Magnetic Compass detected.");
       HMC6343MagCompasspresent = true;
-    }
+    } // */
     if (MMC5983MAmag.begin()) {
       TCterminal.println("MMC5983MA Magnetic Compass detected.");
       MMC5983MAMagCompasspresent = true;
@@ -708,29 +746,24 @@ void inithardware() { //Set up all the hardware interfaces
   if (eecharbuf.strunion.OLEDflag) oled.clear(PAGE);
   newdelay(500);
   irsetup = eecharbuf.strunion.IRSETUPflag; // Is IR table defined?
-  #ifndef __METRO_M4__
   irrecv.enableIRIn(); // Start the IR receiver
-  #else
-  irrecv.enableIRIn(); // Start the IR receiver
-  #endif
 
   SETIRFLAG(); // Fake it that IR is already set up
   SETTCIFLAG(); // Fake it that TC Options are already set up
   SETdisplayFLAG(); //Assume display is already set up
   SETINITFLAG(); // Assume telescope mount is initialized
+  if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
+    if (getRockerTiltPresent()) rockerTilt.powerDownMode();
+    if (getTubeTiltPresent()) tubeTilt.powerDownMode();
+  }
   topEEPROMwrite();
 }
 
 void STRTturboCLK() {
   // Initialize registers, and set up RTC
   rtczero.begin(); // initialize RTC on Readboard Turbo
-  #ifndef __METRO_M4__
-  rtczero.setDate(GRDAY, GRMONTH, (uint8_t)(GRYEAR % 100)); //Default date set
-  rtczero.setTime(rtchours, rtcmin, rtcseconds); //Default time set
-  #else
   DateTime now = DateTime(GRYEAR, GRMONTH, GRDAY, rtchours, rtcmin, rtcseconds);
   rtczero.adjust(now);
-  #endif
 }
 
 void INITZONE() {
@@ -771,6 +804,8 @@ void RESETIME() {
 
 void INIT() {
   if (eecharbuf.strunion.enableRealHwInit) {
+    if (getRockerTiltPresent()) rockerTilt.WakeMeUp();
+    if (getTubeTiltPresent()) tubeTilt.WakeMeUp();
   // Initialize Telescope Mount
   // 1. Find Azimuth Reference
   // 2. Get Azimuth Range
@@ -786,7 +821,7 @@ void INIT() {
   }
   // 4. Get True North location in Azimuth, if possible
   // - Update Azimuth zero location
-  
+  getMagneticNorth();
   // 5. Get Horizon location in Altitude
   // 6. Get Range in Altitude by finding Zenith
   TCterminal.println("");
@@ -808,6 +843,11 @@ void INIT() {
     AltitudeEncoderInitialized = true;
   }
   // 7. Check with reference star - done elsewhere
+  
+  if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
+    if (getRockerTiltPresent()) rockerTilt.powerDownMode();
+    if (getTubeTiltPresent()) tubeTilt.powerDownMode();
+  }
   }
 }
 
@@ -816,35 +856,6 @@ long initIRkey(long previous) {
   //char n, tabn;
   long x1, x2, x3, xn;
   x1 = x2 = 0L; x3 = 1L;
-  #ifndef __METRO_M4__
-  do {
-    // Used to use: irrecv.decode(&results)
-    if (irrecv.decode()) {
-      // Return an IR input char if it has been repeated three times in a row
-      //xn = results.value;
-      xn = irrecv.results.value;
-      if (xn != 0xffffffffL) {
-        TCterminal.println(xn, HEX);
-        if (x2 != 0 && x3 == 1) {
-          if (x1 == xn)
-            x3 = x1;
-          else
-            x1 = x2 = 0;
-        }
-
-        if (x1 != 0 && x2 == 0) {
-          if (x1 == xn)
-            x2 = x1;
-          else
-            x1 = 0;
-        }
-        if (x1 == 0 ) x1 = xn;
-        if (x1 == previous) x1 = 0L;
-      }
-      irrecv.resume(); // Receive the next value
-    }
-  } while (x1 != x2 || x2 != x3);
-  #else
   do {
     if (irrecv.getResults()) {
       irdecoder.decode();  //Decode it
@@ -871,7 +882,6 @@ long initIRkey(long previous) {
       irrecv.enableIRIn(); // Receive the next value
     }
   } while (x1 != x2 || x2 != x3);
-  #endif
 
   return x1;
 }
@@ -966,7 +976,10 @@ void RESETTCI() {
       eecharbuf.strunion.INA219flag = !(eecharbuf.strunion.INA219flag);
       if (eecharbuf.strunion.INA219flag) ina219.begin(); // Voltage monitor
     }
-    if (choice == '2') eecharbuf.strunion.MotorDriverflag = !(eecharbuf.strunion.MotorDriverflag);
+    if (choice == '2') {
+      eecharbuf.strunion.MotorDriverflag = !(eecharbuf.strunion.MotorDriverflag);
+	  MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
+	}
     if (choice == '3') eecharbuf.strunion.USELIMITS = !(eecharbuf.strunion.USELIMITS);
     if (choice == '4') eecharbuf.strunion.PFLAG = !(eecharbuf.strunion.PFLAG);
     if (choice == '5') eecharbuf.strunion.RFLAG = !(eecharbuf.strunion.RFLAG);
@@ -986,6 +999,13 @@ void RESETTCI() {
     if (GETYORN()) eecharbuf.strunion.enableRealHwInit = !(eecharbuf.strunion.enableRealHwInit);
 	}
   } while (choice != '0');
+  if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
+    if (getRockerTiltPresent()) rockerTilt.powerDownMode();
+    if (getTubeTiltPresent()) tubeTilt.powerDownMode();
+  } else {
+    if (getRockerTiltPresent()) rockerTilt.WakeMeUp();
+    if (getTubeTiltPresent()) tubeTilt.WakeMeUp();
+  }
   SETTCIFLAG();
 }
 
@@ -1055,6 +1075,24 @@ void topEEPROMwrite() {
   printstatusscreen();
 }
 
+void gotoTarget() {
+  // Start process of moving motors to Target Right Ascension (TRA) and Declination (TDEC)
+  // Compute Target encoder counts in RA/Azimuth
+  TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
+  if (TcRAAZ - RAAZ > 0L) {
+    startMotorToTarget(AZIMUTH_MOTOR, CW_DIRECTION, TcRAAZ);
+  } else if (TcRAAZ - RAAZ < 0L) {
+    startMotorToTarget(AZIMUTH_MOTOR, CCW_DIRECTION, TcRAAZ);
+  }
+  // Compute Target encoder counts in Declination/Altitude
+  TcDECAL = TDEC * (double)RDECAL / 90.;
+  if (TcDECAL - DECAL > 0L) {
+    startMotorToTarget(ALTITUDE_MOTOR, CW_DIRECTION, TcDECAL);
+  } else if (TcDECAL - DECAL < 0L) {
+    startMotorToTarget(ALTITUDE_MOTOR, CCW_DIRECTION, TcDECAL);
+  }
+}
+
 void doCommand() {
   // Process command key press from user
   int tmp = 0;
@@ -1112,7 +1150,7 @@ void doCommand() {
       TCterminal.print(" Right Ascension = ");
       Ltmp = INPUTHMS(); TCterminal.println("");
     } while (Ltmp < 0 || Ltmp > (24L * 3600L));
-    if (tmp != -1L) {
+    if (Ltmp != -1L) {
       TRA = (double)Ltmp / 3600.; // Convert RA to hours
     }
     TCterminal.println(" ");
@@ -1121,13 +1159,27 @@ void doCommand() {
     do {
       TCterminal.print(" Declination = ");
       LCDline1(); LCDprint("Dec=");
-      Ltmp = INPUTHMS();
-      TCterminal.println("");
+      Ltmp = INPUTHMS(); TCterminal.println("");
     } while (Ltmp < (-90L * 3600L) || Ltmp > (90L * 3600L));
-    if (tmp != -1L) {
+    if (Ltmp != (-90L * 3600L)) {
       TDEC = (double)Ltmp / 3600.; // Convert Declination to hours
       COMMAND = '9' - '0';
     }
+	double Dtmp = 0.;
+	if (eecharbuf.strunion.PFLAG) {
+      do {
+        LCDclear();  LCDline3(); LCDprint("Epoch=");
+        TCterminal.print(" Epoch (year) = ");
+        Dtmp = GETFDECNUM(); TCterminal.println("");
+      } while (Dtmp < 1600. || Ltmp > (2200.));
+	  myAstro.setGMTdate((long)Dtmp,1,1);
+      myAstro.setRAdec(TRA, TDEC);
+	  myAstro.doPrecessTo2000();
+      myAstro.setGMTdate(GRYEAR, GRMONTH, GRDAY);
+      myAstro.doPrecessFrom2000();
+      TRA = myAstro.getRAdec();
+      TDEC = myAstro.getDeclinationDec();
+	}
     printstatusscreen();
   } else if ( num == '.') {
     // Star
@@ -1162,6 +1214,12 @@ void doCommand() {
       TRA = myObjects.getRAdec();
       TDEC = myObjects.getDeclinationDec();
       COMMAND = FNDARB;
+	  if (eecharbuf.strunion.PFLAG) {
+        myAstro.setRAdec(TRA, TDEC);
+        myAstro.doPrecessFrom2000();
+        TRA = myAstro.getRAdec();
+        TDEC = myAstro.getDeclinationDec();
+	  }
     }
     printstatusscreen();
   } else if (num == '-') {
@@ -1192,6 +1250,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '2') {
@@ -1220,6 +1284,12 @@ void doCommand() {
           TRA = myObjects.getRAdec();
           TDEC = myObjects.getDeclinationDec();
           COMMAND = FNDOBJECT;
+		  if (eecharbuf.strunion.PFLAG) {
+            myAstro.setRAdec(TRA, TDEC);
+            myAstro.doPrecessFrom2000();
+            TRA = myAstro.getRAdec();
+            TDEC = myAstro.getDeclinationDec();
+	      }
         }
       }
     }
@@ -1235,6 +1305,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '5') {
@@ -1249,6 +1325,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     if (num1 == '6') {
@@ -1263,6 +1345,12 @@ void doCommand() {
         TRA = myObjects.getRAdec();
         TDEC = myObjects.getDeclinationDec();
         COMMAND = FNDOBJECT;
+		if (eecharbuf.strunion.PFLAG) {
+          myAstro.setRAdec(TRA, TDEC);
+          myAstro.doPrecessFrom2000();
+          TRA = myAstro.getRAdec();
+          TDEC = myAstro.getDeclinationDec();
+	    }
       }
     }
     printstatusscreen();
@@ -1272,6 +1360,9 @@ void doCommand() {
     if (LCDscreenNum > 4) LCDscreenNum = 0;
   } else if (num == 0x0d) {
     // Goto previously specified Target position
+    if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
+      gotoTarget();
+    }
   }
 }
 
@@ -1287,19 +1378,12 @@ void tcintro() { // Startup screen for user
   
   Serial1.begin(9600); // use serial 4x20 LCD display - Easy to mount onto telescope
   
-  #ifndef __METRO_M4__
-  // For SAMD21 Serial2
-  pinPeripheral(2, PIO_SERCOM); // Define Pins for Serial2 UART port
-  pinPeripheral(3, PIO_SERCOM_ALT);
-  #else
   // For SAMD51 Serial2
   pinPeripheral(4, PIO_SERCOM); // Define Pins for Serial2 UART port
   pinPeripheral(7, PIO_SERCOM);
-  #endif
   Serial2.begin(9600); //Or put VT100 compatible terminal emulator - Full Menus here
   
   newdelay(1600); // Give time for Serial2 to init
-  //Serial2.println(" Start with Test of Serial Output.");
   TERMclear(); //Clear terminal screen and home cursor
   TERMtextcolor('g');
   TCterminal.println("\nArduino SAMD Telescope Controller");
@@ -1330,7 +1414,7 @@ void tcintro() { // Startup screen for user
     LCDline2();
     LCDprint("TC SYSTEM RESET");
     RESETIMEFLAG(); RESETINITFLAG(); // Actual re-initialization done in TC_main()
-	eepromDefaults();
+    eepromDefaults();
     WAITASEC(3); // Let user know what we've done
   }
   // make it so it doesn't assume errors on start

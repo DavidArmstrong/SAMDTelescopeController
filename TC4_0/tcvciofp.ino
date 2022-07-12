@@ -1,5 +1,9 @@
-// TCVCIOFP
-// Telescope Controller 4.0 - Basic I/O
+/* Telescope Controller 4.00.00 - Variables, Constants, Basic I/O, and Floating Point related routines
+// September 2022
+// See MIT LICENSE.md file and ReadMe.md file for essential information
+// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
+
 #include "tcheader.h"
 
 char KEY() { // return a character of input from any source
@@ -23,22 +27,12 @@ char KEY() { // return a character of input from any source
           IRkey = 0L;
         } else {
           xnL = 0L;
-          #ifndef __METRO_M4__
-          // Used to use: irrecv.decode(&results)
-          if (irrecv.decode()) {
-            //xnL = results.value;
-            xnL = irrecv.results.value;
-            if (xnL == 0xffffffffL) xnL = 0L;
-            irrecv.resume(); // Receive the next value
-          }
-          #else
           if (irrecv.getResults()) {
             irdecoder.decode();  //Decode it
             xnL = irdecoder.value;
             if (xnL == 0xffffffffL) xnL = 0L;
             irrecv.enableIRIn(); // Receive the next value
           }
-          #endif
         }
 
         if (irsetup && (xnL != 0L)) {
@@ -77,7 +71,6 @@ void LCDline1() { // move cursor to beginning of first line
     TC_LCD.write(128); //Change the position (128) of the cursor to 1st row (0), position 0
   }
 }
-
 void LCDline2() { // move cursor to beginning of second line
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -89,7 +82,6 @@ void LCDline2() { // move cursor to beginning of second line
     TC_LCD.write(128 + 64); //Change the position (128) of the cursor to 2nd row (64), position 0
   }
 }
-
 void LCDline3() { // move cursor to beginning of third line
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -101,7 +93,6 @@ void LCDline3() { // move cursor to beginning of third line
     TC_LCD.write(128 + 20); //Change the position (128) of the cursor to 3rd row (20), position 0
   }
 }
-
 void LCDline4() { // move cursor to beginning of fourth line
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -113,7 +104,6 @@ void LCDline4() { // move cursor to beginning of fourth line
     TC_LCD.write(128 + 84); //Change the position (128) of the cursor to 4th row (84), position 0 (0)
   }
 }
-
 void LCDclear() { // Clear display and home cursor
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
@@ -131,7 +121,6 @@ void LCDclear() { // Clear display and home cursor
     TC_LCD.write('-'); //Send clear display character
   }
 }
-
 void LCDprint(int tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -141,7 +130,6 @@ void LCDprint(int tmp) { // Print to LCD
     TC_LCD.print(tmp);
   }
 }
-
 void LCDprint(long tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -151,7 +139,6 @@ void LCDprint(long tmp) { // Print to LCD
     TC_LCD.print(tmp);
   }
 }
-
 void LCDprint(double tmp, int frac) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -161,7 +148,6 @@ void LCDprint(double tmp, int frac) { // Print to LCD
     TC_LCD.print(tmp, frac);
   }
 }
-
 void LCDprint(char tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -171,7 +157,6 @@ void LCDprint(char tmp) { // Print to LCD
     TC_LCD.print(tmp);
   }
 }
-
 void LCDprint(char* tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -181,7 +166,6 @@ void LCDprint(char* tmp) { // Print to LCD
     TC_LCD.print(tmp);
   }
 }
-
 void LCDprint(const char* tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag) {
     Wire.beginTransmission(LCDi2c_ADR);
@@ -243,31 +227,12 @@ void RESETdisplayFLAG() {
 boolean Displayquestion() {
   return !displayFLAG;
 }
-void SETPRECESSFLAG() {
-  PFLAG = true;
-}
-void RESETPRECESSFLAG() {
-  PFLAG = false;
-}
-boolean PRECESSquestion() {
-  return PFLAG;
-}
-void SETREFRACTFLAG() {
-  RFLAG = true;
-}
-void RESETREFRACTFLAG() {
-  RFLAG = false;
-}
-boolean REFRACTquestion() {
-  return RFLAG;
-}
 void SETERRFLAG() {
   ERRFLAG = true;
 }
 void RESETERRFLAG() {
   ERRFLAG = false;
 }
-
 
 /* (This was lifted from a web blog - somewhere, then heavily modified)
   //    int len;
@@ -313,25 +278,13 @@ boolean RDLBTN() {
 }
 
 void TERMclear() {
-  //TCterminal.print(" ");
   //Clear VT100 screen and home cursor
-  /*
-    TCterminal.write(0x1b); // esc
-    TCterminal.write(0x5b); // [
-    TCterminal.write(0x48); // H - Go to home position
-    TCterminal.write(0x1b); // esc
-    TCterminal.write(0x5b); // [
-    TCterminal.write(0x32); // 2
-    TCterminal.write(0x4a); // J - Clear the screen
-  */
   ansi.clearScreen();
 }
-
 void TERMlineup() {
   // Move cursor up one line
   ansi.cursorUp(1);
 }
-
 void TERMcursor() {
   //Set VT100 cursor to underline
   TCterminal.write(0x1b); // esc
@@ -339,21 +292,11 @@ void TERMcursor() {
   TCterminal.write(3);
   TCterminal.print(" q");
 }
-
 void TERMxy(int x, int y) {
   newdelay(20); // Serialx has a small Tx buffer
   // Position cursor on VT100 screen at coordinates x,y
-  /*
-    TCterminal.write(0x1b); // esc
-    TCterminal.write(0x5b); // [
-    TCterminal.print(y); // vertical
-    TCterminal.write(0x3b); // ; or semi-colon
-    TCterminal.print(x); // horizontal
-    TCterminal.write(0x48); // H - Go to x,y position
-  */
   ansi.gotoXY(y, x);
 }
-
 void TERMtextcolor( char buf ) {
   //Set foreground text color on vt100 terminal screen
   int tmp;
@@ -374,14 +317,6 @@ void TERMtextcolor( char buf ) {
 
 void WAITASEC(int n) {
   // Wait until the next second tick
-  #ifndef __METRO_M4__
-  long initialTime = rtczero.getSeconds();
-
-  for (int x = 0; x < n; x++) {
-      while (initialTime == rtczero.getSeconds()) {;}
-    initialTime == rtczero.getSeconds();
-  }
-  #else
   DateTime now = rtczero.now();
   long initialTime = now.second();
 
@@ -392,7 +327,6 @@ void WAITASEC(int n) {
     }
     initialTime = now.second();
   }
-  #endif
 }
 
 void newdelay( long interval ) {
@@ -412,21 +346,12 @@ boolean CHKNUM() {
   //Check for a key press, somewhere
   // Used to use: irrecv.decode(&results)
   IRkey = 0L;
-  #ifndef __METRO_M4__
-  if (irrecv.decode()) {
-    //IRkey = results.value;
-    IRkey = irrecv.results.value;
-    if (IRkey == 0xffffffffL) IRkey = 0L;
-    irrecv.resume(); // Receive the next value
-  }
-  #else
   if (irrecv.getResults()) {
     irdecoder.decode();  //Decode it
     IRkey = irdecoder.value;
     if (IRkey == 0xffffffffL) IRkey = 0L;
     irrecv.enableIRIn(); // Receive the next value
   }
-  #endif
   boolean flag = TCterminal.available() || TC_LCD.available() || (IRkey != 0L);
   return flag;
 }
@@ -450,7 +375,6 @@ float getMagCompassHeading() {
   HMC6352.Sleep();
   return FMAGHDG;
 }
-
 double getMMC5983MagCompassHeading() {
   unsigned int rawValue = 0;
     double heading = 0;
@@ -502,7 +426,6 @@ double getMMC5983MagCompassHeading() {
 boolean getRockerTiltPresent() {
   return rockerTiltPresent;
 }
-
 boolean getTubeTiltPresent() {
   return tubeTiltPresent;
 }
@@ -512,7 +435,6 @@ double getAltitude() {
   double faltitudenow = (double)DECAL * 90.0 / (double)RDECAL;
   return faltitudenow;
 }
-
 double getAzimuth() {
   RAAZ = 0L; RAAZenc.read();
   double fazimuthnow = (double)RAAZ * 360.0 / (double)RRAAZ;
@@ -527,7 +449,6 @@ boolean getAzRefSensor() {
   
   return (digitalRead(AZREFsensor) == LOW);
 }
-
 boolean getHorizonRefSensor() {
   // Return true if Altitude Horizon Sensor, which is a Hall Effect Sensor, (Non-Latching)
   // is detecting the magnet mounted in the side board of the telescope.
@@ -536,7 +457,6 @@ boolean getHorizonRefSensor() {
   
   return (digitalRead(HORIZONlim) == LOW);
 }
-
 boolean getZenithRefSensor() {
   // Return true if Altitude Zenith Sensor, which is a Hall Effect Sensor, (Non-Latching)
   // is detecting the magnet mounted in the side board of the telescope.
@@ -546,18 +466,19 @@ boolean getZenithRefSensor() {
   return (digitalRead(ZENITHlim) == LOW);
 }
 
-boolean driveMotor(int motor, int direction, int speed, long position) {
+boolean startMotorToTarget(int motor, int direction, long position) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.
-  // uses .setDrive( motorNum, direction, level ) to drive the motor
+  // uses i2cMotorDriver.setDrive( motorNum, direction, level ) to drive the motor
   int currentSpeed = 0;
   int currentDir = 0;
+  int speed = 0;
   if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
   if ( (direction != CW_DIRECTION) && (direction != CCW_DIRECTION) ) return false;
-  if ( (speed < 0) || (speed > 255) ) return false;
+  //if ( (speed < 0) || (speed > 255) ) return false;
   if (motor == ALTITUDE_MOTOR) {
     currentSpeed = currentAlMtrSpeed;
-	currentDir = currentAlMtrDir;
+    currentDir = currentAlMtrDir;
   }
   if (motor == AZIMUTH_MOTOR) {
     currentSpeed = currentAzMtrSpeed;
@@ -570,18 +491,18 @@ boolean driveMotor(int motor, int direction, int speed, long position) {
         newdelay(5);
         i2cMotorDriver.setDrive( motor, currentDir, i);
       }
-	  currentSpeed = 0;
-	}
-	// TBD - PID here, with target check
+      currentSpeed = 0;
+    }
+    // TBD - PID here, with target check
     i2cMotorDriver.setDrive( motor, direction, speed );
-	if (motor == ALTITUDE_MOTOR) {
+    if (motor == ALTITUDE_MOTOR) {
       currentAlMtrSpeed = speed;
-	  currentAlMtrDir = direction;
-	}
+      currentAlMtrDir = direction;
+    }
     if (motor == AZIMUTH_MOTOR) {
       currentAzMtrSpeed = speed;
-	  currentAzMtrDir = direction;
-	}
+      currentAzMtrDir = direction;
+    }
   }
   return true;
 }
@@ -596,7 +517,7 @@ boolean driveMotor(int motor, int direction, int speed) {
   if ( (speed < 0) || (speed > 255) ) return false;
   if (motor == ALTITUDE_MOTOR) {
     currentSpeed = currentAlMtrSpeed;
-	currentDir = currentAlMtrDir;
+    currentDir = currentAlMtrDir;
   }
   if (motor == AZIMUTH_MOTOR) {
     currentSpeed = currentAzMtrSpeed;
@@ -605,14 +526,14 @@ boolean driveMotor(int motor, int direction, int speed) {
   if (MotorDriverflag) {
     //i2cMotorDriver.setDrive( motor, direction, speed );
     //Smoothly move one motor up to speed and back (drive level 0 to 255)
-	if (currentDir != direction) {
+    if (currentDir != direction) {
       // Need to stop motor before having it reverse direction
       for (int i = currentSpeed; i >= 0; i--) {
         newdelay(5);
         i2cMotorDriver.setDrive( motor, currentDir, i);
       }
-	  currentSpeed = 0;
-	}
+      currentSpeed = 0;
+    }
     if (currentSpeed < speed) {
       for (int i = currentSpeed; i < speed; i++) {
         newdelay(5);
@@ -626,12 +547,12 @@ boolean driveMotor(int motor, int direction, int speed) {
     }
     if (motor == ALTITUDE_MOTOR) {
       currentAlMtrSpeed = speed;
-	  currentAlMtrDir = direction;
-	}
+      currentAlMtrDir = direction;
+    }
     if (motor == AZIMUTH_MOTOR) {
       currentAzMtrSpeed = speed;
-	  currentAzMtrDir = direction;
-	}
+      currentAzMtrDir = direction;
+    }
   }
   return true;
 }
@@ -643,7 +564,7 @@ boolean driveMotorStop(int motor) {
   if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
   if (motor == ALTITUDE_MOTOR) {
     currentSpeed = currentAlMtrSpeed;
-	currentDir = currentAlMtrDir;
+    currentDir = currentAlMtrDir;
   }
   if (motor == AZIMUTH_MOTOR) {
     currentSpeed = currentAzMtrSpeed;
@@ -651,7 +572,7 @@ boolean driveMotorStop(int motor) {
   }
   if (MotorDriverflag) {
     // uses .setDrive( motorNum, direction, level ) to stop the motor
-    //i2cMotorDriver.setDrive( motor, 0, 0 );
+    // i2cMotorDriver.setDrive( motor, 0, 0 );
     for (int i = currentSpeed; i >= 0; i--) {
       newdelay(5);
       i2cMotorDriver.setDrive( motor, currentDir, i);

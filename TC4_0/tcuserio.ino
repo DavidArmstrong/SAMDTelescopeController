@@ -1,5 +1,9 @@
-// TCUSERIO
-// Telescope Controller 4.0 - User I/O functions
+/* Telescope Controller 4.00.00 - User I/O functions
+// September 2022
+// See MIT LICENSE.md file and ReadMe.md file for essential information
+// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
+
 #include "tcheader.h"
 
 void oledprintData() {
@@ -22,16 +26,10 @@ void oledprintData() {
     // ...and time
     print2digits((int)myAstro.getLT());
     oled.print(":");
-    #ifndef __METRO_M4__
-    print2digits(rtczero.getMinutes());
-    oled.print(":");
-    print2digits(rtczero.getSeconds());
-    #else
     DateTime now = rtczero.now();
     print2digits(now.minute());
     oled.print(":");
     print2digits(now.second());
-    #endif
     oled.display();
   }
 }
@@ -59,7 +57,11 @@ void printstatusscreen() {
   //  01/01/2020 10:10:10 PST   -32* 32' 32"  110* 32' 32" W
   TCterminal.println("Local Time: 00:00:00   Local Siderial Time:");
   if (BMEpresent) {
+    if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
+		TCterminal.println("Temperature  Humidity  Pressure    Altitude");
+    } else {
     TCterminal.println("Temperature  Humidity  Pressure    Altitude    Compass Hdg");
+	}
     //  111.1* F     48.7%     29.92" Mg
     TERMtextcolor('w'); printBME280(); TCterminal.println(""); TERMtextcolor('r');
   } else if (getMagCompassPresent()) {
@@ -84,9 +86,14 @@ void printstatusscreen() {
   TCterminal.println("Current Diffs from Target:"); //  V xxxx  > xxxx");
   //TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Magnetic");
   //TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  Variation");
+  if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Current  Magnetic");
   TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  (mA)     Variation");
   //16000000  16000000   100000    0.0  0.0    45.3 0.0    12.12
+  } else {
+  TCterminal.println("Maximum Ranges                                    Power    Current  Magnetic");
+  TCterminal.println("Azimuth   Altitude                                Voltage  (mA)     Variation");
+  }
   TERMALLOPTIONS();
   //TCterminal.println("Command:  0-8 Sun, Moon, Planet   . Star   - Non-Stellar (Scan)");
   //TCterminal.print("          9 Arbitrary   <Enter> Goto   <bckspc> Initialize");
@@ -341,18 +348,12 @@ void updatestatusscreen() {
   }
   tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
   if (DSTAUTOFLAG) tmpflag = myAstro.useAutoDST();
-  #ifndef __METRO_M4__
-  rtchours = (byte)rtczero.getHours();
-  tmpminutes = rtcmin;
-  rtcmin = (byte)rtczero.getMinutes();
-  rtcseconds = rtczero.getSeconds();
-  #else
   DateTime now = rtczero.now();
   rtchours = (byte)now.hour();
   tmpminutes = rtcmin;
   rtcmin = (byte)now.minute();
   rtcseconds = now.second();
-  #endif
+
   // Print Time(s)
   myAstro.setGMTtime(rtchours, rtcmin, rtcseconds);
   if (eecharbuf.strunion.SerialTermflag) {
@@ -417,6 +418,7 @@ void updatestatusscreen() {
     // Only update once a minute, to reduce number of screen writes
     printBME280();
   }
+  if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   if (getMagCompassPresent()) {
     ftmp = getMagCompassHeading();
     if (FMAGHDG != ftmp) {
@@ -434,6 +436,7 @@ void updatestatusscreen() {
         TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
       }
     }
+  }
   }
   //*
   //Current position
@@ -456,6 +459,10 @@ void updatestatusscreen() {
   }
   
   myAstro.setAltAz(FALTITUDE, FAZIMUTH);
+  // Refraction correction
+  if (BMEpresent && eecharbuf.strunion.RFLAG && (azimuthchanged || altitudechanged)) {
+    myAstro.doAntiRefractionF(FPINHG, FTEMPF);
+  }
   myAstro.doAltAz2RAdec();
   //newdelay(10);
   // print Right Ascension, Declination
@@ -517,6 +524,10 @@ void updatestatusscreen() {
     case STAYFUNC: myAstro.setRAdec(FRA, FDEC); break;
   }
   myAstro.doRAdec2AltAz();
+  // Refraction correction
+  if (BMEpresent && eecharbuf.strunion.RFLAG) {
+    myAstro.doRefractionF(FPINHG, FTEMPF);
+  }
   ftmp = myAstro.getAzimuth();
   if (TAZIMUTH != ftmp) {
     TAZIMUTH = ftmp;
@@ -560,7 +571,7 @@ void updatestatusscreen() {
   }
   if (eecharbuf.strunion.SerialTermflag) {
     myObjects.setRAdec(TRA, TRA);
-    myObjects.identifyObject();
+    //myObjects.identifyObject();
     if (screenCOMMAND != COMMAND) {
       screenCOMMAND = COMMAND;
       TERMxy(17, 17);
@@ -574,6 +585,7 @@ void updatestatusscreen() {
     }
   }
 
+  if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   if (getRockerTiltPresent()) {
     if (rockerTilt.isConnected()) {
       //Get next block of data from sensor
@@ -606,6 +618,7 @@ void updatestatusscreen() {
       } else tubeTilt.reset();
     } else tubeTilt.reset();
   }
+  }
   if (eecharbuf.strunion.INA219flag && (tmpminutes != rtcmin)) {
     // Only update once a minute to reduce needed screen writes
     // Compute load voltage
@@ -630,6 +643,7 @@ void updatestatusscreen() {
       TERMxy(69, 21); TCterminal.print(magVariation);
       TCterminal.print("  ");
     }
+	magVariationInAzimuthCounts = magVariation * ((double)RRAAZ) / 360.0;
     screenDecRefresh = false;
   }
 }
