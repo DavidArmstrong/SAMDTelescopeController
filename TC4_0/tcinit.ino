@@ -1,23 +1,23 @@
 /* Telescope Controller 4.00.00 - Initialization and High level functionality
 // September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #include "tcheader.h"
 
-// We have to define this function to use the SAMD51 alternate Serial2 pins
+/* We have to define this function to use the SAMD51 alternate Serial2 pins
 // And for SAMD51 on the Metro M4 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
-// sercom2 - SPI
+// sercom2 - SPI */
 void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
 
 void eepromDefaults() {
-  //
+  // Default values that we start with on a new EEPROM
   IRkey = 0L;
   // Brute force default initialization of EEPROM variables
   // We will replace the defaults if valid data is in an EEPROM
@@ -39,6 +39,7 @@ void eepromDefaults() {
   eecharbuf.strunion.RRAAZ = 10000L; // Azimuth encoder range
   eecharbuf.strunion.RDECAL = 4000L; // Altitude encoder range
   eecharbuf.strunion.AZOFFSET = 0L; // Encoder count Offset of Azimuth Reference from True North
+  eecharbuf.strunion.ALOFFSET = 0L; // Encoder count Offset of Altitude Horizon Reference from level
   eecharbuf.strunion.DTEMPF = 68.0; // Default temp in Farenheit
   //eecharbuf.strunion.DTZONE = -8.0; // Default Time Zone (PST)
   eecharbuf.strunion.FLATITUDE = 1.; // Latitude in radians
@@ -51,14 +52,18 @@ void eepromDefaults() {
   eecharbuf.strunion.FtiltXtubeoff = 0.; // Offset of X Tilt on Telescope Tube from level
   eecharbuf.strunion.FtiltYtubeoff = 0.; // Offset of Y Tilt on Telescope Tube from level
   // Set up default values for Demo mode
-  TZONE = eecharbuf.strunion.DTZONE;
   //DSTFLAG = eecharbuf.strunion.DSTFLAG;
   // Assume Demo mode on initial boot
   eecharbuf.strunion.enableRealHwInit = false;
   MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
   // Offset of Azimuth Encoder Range from measured Magnetic North
   AzimuthMagneticEncoderOffset = 0.;
+  magOffsetComputed = false;
   LCDbrightness = 0x9D; // Default LCD backlight brightness is MAX
+  RAAZenc.write(0L);
+  FAZIMUTH = 0.;
+  DECALenc.write(0L);
+  FALTITUDE = 0.;
 }
 
 void rockertiltlevelcheck() {
@@ -126,7 +131,7 @@ void gotoAzRef() {
     }
     if (MotorDriverflag) {
       newdelay(500);
-      // Start motor in CW direction
+      // Start motor in CW direction to find Azimuth Reference Sensor
       driveMotor(AZIMUTH_MOTOR, CW_DIRECTION, FAST_SPEED);
     } else {
       TCterminal.println("Move telescope in Azimuth CW to find AZ Reference Sensor.");
@@ -262,12 +267,27 @@ void getMagneticNorth() {
   int i, j, max, min, guessNorth;
   
   // We only do this if we are using Motors so as to avoid magnetic noise
-  if (MotorDriverflag && (getMagCompassPresent() || //HMC6343MagCompasspresent ||
+  if (MotorDriverflag && (
+#ifdef __HMC6352__
+  getMagCompassPresent() || //HMC6343MagCompasspresent ||
+#endif
   MMC5983MAMagCompasspresent)) {
+    // Prompt User to prep for Magnetic Compass
+	TCterminal.println("");
+    TCterminal.println("Check Magnetic Compass position:");
+    TCterminal.println(hitkey);
+    LCDclear();
+    LCDline1();
+    LCDprint("Check Mag Compass");
+    LCDline4();
+    LCDprint(hitkey);
+	KEY();
+#ifdef __HMC6352__
 	if (getMagCompassPresent()) {
 	  HMC6352.Wake();
       newdelay(10);
 	}
+#endif
 	// We start with a game to get a 'full' circle in Azimuth
 	driveMotor(AZIMUTH_MOTOR, CCW_DIRECTION, FAST_SPEED); // Go backwards past zero point
 	while (RAAZenc.read() > 0L) ; // wait until past it
@@ -281,7 +301,9 @@ void getMagneticNorth() {
 	  // wait until we get to the next point
 	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L != 0L) ;
 	  x[1] = (double) RAAZenc.read();
+#ifdef __HMC6352__
 	  if (getMagCompassPresent()) y[i] = (double) HMC6352.GetHeading();
+#endif
 	  if (MMC5983MAMagCompasspresent) y[i] = getMMC5983MagCompassHeading();
 	  while ((RAAZenc.read() * 3600L / RRAAZ) % 3600L == 0L) ; // wait until off this point
 	}
@@ -330,33 +352,68 @@ void getMagneticNorth() {
 	  TCterminal.println("Making a guess of where Magnetic North is in Encoder counts.");
 	  AzimuthMagneticEncoderOffset = (float)guessNorth * ((float)RRAAZ / 3600.);
     }
+	magOffsetComputed = true;
+	TCterminal.println("");
+    TCterminal.println("Retract Magnetic Compass position:");
+    TCterminal.println(hitkey);
+    LCDclear();
+    LCDline1();
+    LCDprint("Retract Mag Compass");
+    LCDline4();
+    LCDprint(hitkey);
+	KEY();
   }
 }
 
 void printGoAboveHorizon() {
-  TCterminal.println("Move telescope in Altitude to point above the Horizon");
+  TCterminal.println("\nMove telescope in Altitude towards Zenith");
   LCDclear();
   LCDline1();
-  LCDprint("Move Altitude");
+  LCDprint("Move Telescope in");
   LCDline2();
-  LCDprint("above Horizon");
+  LCDprint("Altitude towards");
+  LCDline3();
+  LCDprint("Zenith");
 }
 
 void printGoToHorizon() {
-  TCterminal.println("Move telescope in Altitude to point to the Horizon");
+  TCterminal.println("\nMove telescope in Altitude towards the Horizon");
+  LCDclear();
+  LCDline1();
+  LCDprint("Move Altitude to");
+  LCDline2();
+  LCDprint("Horizon until ");
+  LCDline3();
+  if (getTubeTiltPresent()) {
+    TCterminal.println("Until Tube Tilt Sensor reports as level.");
+    LCDprint("tilt level");
+  } else if (eecharbuf.strunion.USELIMITS) {
+	TCterminal.println("Until Horizon Sensor triggers.");
+    LCDprint("Sensor triggers");
+  } else { // Manual move
+    TCterminal.println("Until the telescope points exactly at the horizon.");
+    LCDprint("level");
+  }
+  //TCterminal.println(hitkey);
+  //LCDprint(hitkey);
+  //KEY();
+}
+
+void printGoToZenith() {
+  TCterminal.println("Move telescope in Altitude to point to the Zenith");
   LCDclear();
   LCDline1();
   LCDprint("Move Altitude");
   LCDline2();
-  LCDprint("to Horizon");
+  LCDprint("to Zenith");
   if (getTubeTiltPresent()) {
     TCterminal.println("Until Tube Tilt Sensor triggers.");
 	LCDline3();
     LCDprint("until tilt hits");
   } else if (eecharbuf.strunion.USELIMITS) {
-	TCterminal.println("Until Horizon Sensor triggers.");
+	TCterminal.println("Until Zenith Sensor triggers.");
 	LCDline3();
-    LCDprint("until Horiaon");
+    LCDprint("until Zenith");
 	LCDline4();
     LCDprint("Sensor Hits");
   }
@@ -370,8 +427,8 @@ void setAlEncoderAtHorizon() {
     if (getTubeTiltX() < 0.02) {
       // We're very close to level now
       if (MotorDriverflag) {
-        //Run the motor CCW to get above it
-        driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, FAST_SPEED);
+        //Run the motor CW to get above it, by going towards zenith
+        driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED);
       } else {
         printGoAboveHorizon();
       }
@@ -381,12 +438,12 @@ void setAlEncoderAtHorizon() {
     }
     newdelay(500);
     if (MotorDriverflag) {
-      // Start motor in CW direction
-      driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, SLOW_SPEED);
+      // Start motor in CCW direction towards Horizon
+      driveMotor(ALTITUDE_MOTOR, CCW_DIRECTION, SLOW_SPEED);
     } else {
       printGoToHorizon();
     }
-    // Continue until we find the Horizon
+    // Continue until we find the Horizon via inclinometer
     while (getTubeTiltX() > 0.0) ;
   } else if (eecharbuf.strunion.USELIMITS) {
     // No tilt sensor, so have to use Limit sensors
@@ -398,14 +455,13 @@ void setAlEncoderAtHorizon() {
       } else {
         printGoAboveHorizon();
       }
-    
       // And wait....
       while (getHorizonRefSensor()) ;
       driveMotorStop(ALTITUDE_MOTOR); // Turn motor off
     }
     newdelay(500);
     if (MotorDriverflag) {
-      // Start motor in CW direction
+      // Start Altitude motor in CW direction towards Zenith
       driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, SLOW_SPEED);
     } else {
       printGoToHorizon();
@@ -434,7 +490,12 @@ void measureALrangeByLimits() {
   setAlEncoderAtHorizon();
   // Go back to get off the sensor
   newdelay(500);
-  
+  if (MotorDriverflag) {
+    //Run the motor CW to get above it by moving towards zenith
+    driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED);
+  } else {
+    printGoAboveHorizon();
+  }
   // And keep running until we hit the Zenith sensor
   if (eecharbuf.strunion.USELIMITS) {
     while (!getZenithRefSensor()) ;
@@ -444,9 +505,9 @@ void measureALrangeByLimits() {
     TCterminal.println(hitkey);
     LCDclear();
     LCDline1();
-    LCDprint("Move Altitude");
+    LCDprint("Move Telescope in");
     LCDline2();
-    LCDprint("to Zenith");
+	LCDprint("Altitude to Zenith");
     LCDline4();
     LCDprint(hitkey);
     KEY();
@@ -473,7 +534,11 @@ void measureALrangeByInclinometer() {
   setAlEncoderAtHorizon();
   // Stop And go back to get zenith
   newdelay(500);
-  
+  if (MotorDriverflag) {
+    driveMotor(ALTITUDE_MOTOR, CW_DIRECTION, FAST_SPEED);
+  } else {
+    printGoAboveHorizon();
+  }
   // And keep running until we hit Zenith
   previous = current = getTubeTiltX();
   while (current >= previous) {
@@ -516,7 +581,6 @@ void inithardware() { //Set up all the hardware interfaces
       int eestat = tcEEPROM.read(2L, eecharbuf.ebuf, sizeof(EEstruct));
       if (eestat == 0) {
         LCDline4(); LCDprint("EEPROM read error ");
-        TZONE = eecharbuf.strunion.DTZONE;
         DSTFLAG = eecharbuf.strunion.DSTFLAG;
         irsetup = eecharbuf.strunion.IRSETUPflag;
         TCIFLAG = eecharbuf.strunion.TCIFLAG;
@@ -584,14 +648,18 @@ void inithardware() { //Set up all the hardware interfaces
   
   myDeclination.begin(); // Initialize magnetic variation calculations
   // Check for various magnetic compass hardware
+#ifdef __HMC6352__
   HMC6352.Wake();  // This is the really old EOL compass
   newdelay(20);
   FMAGHDG = HMC6352.GetHeading();
   HMC6352.Sleep();
+#endif
   //HMC6343MagCompasspresent = false; // This is a newer but very expensive upgrade
   MMC5983MAMagCompasspresent = false; // This is the latest hardware available
+#ifdef __HMC6352__
   if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
     MagCompasspresent = false;
+#endif
     /* Initialize the HMC6343 and verify its physical presence
     if (dobHMC6343.init()) {
       TCterminal.println("HMC6343 Magnetic Compass detected.");
@@ -602,11 +670,12 @@ void inithardware() { //Set up all the hardware interfaces
       MMC5983MAMagCompasspresent = true;
       MMC5983MAmag.softReset();
     }
+#ifdef __HMC6352__
   } else { // Old Magnetic Compass online
     MagCompasspresent = true;
     TCterminal.println("HMC6352 Magnetic Compass detected.");
   }
-  
+  #endif
   if (eecharbuf.strunion.INA219flag) {
     if (ina219.begin()) { // Voltage monitor
       // To use a slightly lower 32V, 1A range (higher precision on amps):
@@ -690,7 +759,7 @@ void inithardware() { //Set up all the hardware interfaces
 
   if ((ubloxGPS.begin() == false) || !I2CEEPROMpresent ) {
     //* We have to add in check for I2CEEPROMpresent, because if we don't
-    // a bare Redboard Turbo will end up getting a false positive for GPS present check.
+    // a bare board will end up getting a false positive for GPS present check.
     // This means that to use GPS, the system MUST have an I2C EEPROM present.
     // Ublox GPS NOT detected at default I2C address
     GPSpresent = false;
@@ -737,7 +806,7 @@ void inithardware() { //Set up all the hardware interfaces
   //long Dtime = rtcseconds + (rtcmin * 60L) + (rtchours * 3600L);
   STRTturboCLK();
   myAstro.setLatLong(FLATITUDE, FLONGITUDE);
-  myAstro.setTimeZone(TZONE);
+  myAstro.setTimeZone(eecharbuf.strunion.DTZONE);
   myAstro.setGMTdate(GRYEAR, GRMONTH, GRDAY);
   myAstro.setGMTtime(rtchours, rtcmin, rtcseconds);
   if (DSTAUTOFLAG) DSTFLAG = myAstro.useAutoDST();
@@ -761,27 +830,27 @@ void inithardware() { //Set up all the hardware interfaces
 
 void STRTturboCLK() {
   // Initialize registers, and set up RTC
-  rtczero.begin(); // initialize RTC on Readboard Turbo
+  rtczero.begin(); // initialize RTC
   DateTime now = DateTime(GRYEAR, GRMONTH, GRDAY, rtchours, rtcmin, rtcseconds);
   rtczero.adjust(now);
 }
 
 void INITZONE() {
-  int tmp = 0;
+  float tmp = 0;
   // Time Zone?
   // Start by setting default
-  // TZONE = DTZONE; already done in tcintro()
+  // DTZONE already initialized in tcintro()
   TCterminal.println(" Type time zone offset from England.");
   TCterminal.println(" i.e. EST=-5, CST=-6, MST=-7, PST=-8, etc.");
   TCterminal.println(" Don't include Daylight Savings Time here.");
   do {
-    TCterminal.print(" TZONE=["); TCterminal.print(TZONE); TCterminal.print("]=");
-    LCDclear(); LCDline1(); LCDprint("TZONE=["); LCDprint(TZONE); LCDprint("]=");
-    tmp = GETINUM(TZONE);
+    TCterminal.print(" TZONE=["); TCterminal.print(eecharbuf.strunion.DTZONE); TCterminal.print("]=");
+    LCDclear(); LCDline1(); LCDprint("TZONE=["); LCDprint(eecharbuf.strunion.DTZONE, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.DTZONE);
     TCterminal.println("");
-  } while (tmp < -12 || tmp > 12);
+  } while (tmp < -12. || tmp > 12.);
   if (inputstrlen != 0) {
-    eecharbuf.strunion.DTZONE = TZONE = tmp;
+    eecharbuf.strunion.DTZONE = tmp;
     TCterminal.println("");
     TCterminal.println(" Is Daylight Savings Time currently in effect?");
     TCterminal.print(" DST IN? ["); TCterminal.print(DSTFLAG); TCterminal.print("]=");
@@ -790,10 +859,7 @@ void INITZONE() {
     eecharbuf.strunion.DSTFLAG = DSTFLAG;
     TCterminal.println("");
     DSTAUTOFLAG = false;
-  } else {
-    eecharbuf.strunion.DTZONE = TZONE;
   }
-  
 }
 
 void RESETIME() {
@@ -802,6 +868,17 @@ void RESETIME() {
   SETIMEFLAG();
 }
 
+void StarTweak() {
+  // Allow 'tweaking' values of azimuth offset and altitude offset
+  // 1. Scan bright star table to get 3 star3 closest to 45 degrees altitude
+  // 2. User selects one (First is default)
+  // 3. Aim telescope to target star
+  // 4. Request star centered manually
+  // 5. Get Azimuth and Altitude encoder counts, and save the diffs as offsets for each axis
+  eecharbuf.strunion.AZOFFSET = 0L; // Encoder count Offset of Azimuth Reference from True North
+  eecharbuf.strunion.ALOFFSET = 0L; // Encoder count Offset of Altitude Horizon Reference from level
+  return;
+}
 void INIT() {
   if (eecharbuf.strunion.enableRealHwInit) {
     if (getRockerTiltPresent()) rockerTilt.WakeMeUp();
@@ -825,6 +902,17 @@ void INIT() {
   // 5. Get Horizon location in Altitude
   // 6. Get Range in Altitude by finding Zenith
   TCterminal.println("");
+  TCterminal.println("Telescope Tube must be readied for observing now:");
+  TCterminal.println("i.e. If it must be extended, do so.");
+  TCterminal.println(hitkey);
+  LCDclear();
+  LCDline1();
+  LCDprint("Extend Tube if");
+  LCDline2();
+  LCDprint("needed for use");
+  LCDline4();
+  LCDprint(hitkey);
+  KEY();
   if (eecharbuf.strunion.AlRangeMeasured) {
     // We know the range, as it is recorded in EEPROM, or is a Default
     // So just set the currrent encoder count accordingly
@@ -1078,18 +1166,25 @@ void topEEPROMwrite() {
 void gotoTarget() {
   // Start process of moving motors to Target Right Ascension (TRA) and Declination (TDEC)
   // Compute Target encoder counts in RA/Azimuth
+  if (magOffsetComputed) {
   TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
+  } else {
+  TcRAAZ = (TRA * (double)RRAAZ / 360.);
+  }
+  RAAZ = RAAZenc.read();
   if (TcRAAZ - RAAZ > 0L) {
-    startMotorToTarget(AZIMUTH_MOTOR, CW_DIRECTION, TcRAAZ);
+    startMotorToTarget(AZIMUTH_MOTOR, CW_DIRECTION, RAAZ, TcRAAZ);
   } else if (TcRAAZ - RAAZ < 0L) {
-    startMotorToTarget(AZIMUTH_MOTOR, CCW_DIRECTION, TcRAAZ);
+    startMotorToTarget(AZIMUTH_MOTOR, CCW_DIRECTION, RAAZ, TcRAAZ);
   }
   // Compute Target encoder counts in Declination/Altitude
   TcDECAL = TDEC * (double)RDECAL / 90.;
+  DECAL = DECALenc.read();
   if (TcDECAL - DECAL > 0L) {
-    startMotorToTarget(ALTITUDE_MOTOR, CW_DIRECTION, TcDECAL);
+    // Start Altitude Motor CW towards Zenith
+    startMotorToTarget(ALTITUDE_MOTOR, CW_DIRECTION, DECAL, TcDECAL);
   } else if (TcDECAL - DECAL < 0L) {
-    startMotorToTarget(ALTITUDE_MOTOR, CCW_DIRECTION, TcDECAL);
+    startMotorToTarget(ALTITUDE_MOTOR, CCW_DIRECTION, DECAL, TcDECAL);
   }
 }
 
@@ -1121,7 +1216,7 @@ void doCommand() {
     if (num == '5') RESETdisplayFLAG();
     if ((num < '1') || (num > '5')) {
       printstatusscreen();
-      LCDclear();
+      //LCDclear();
     }
   } else if (num < '9' && num >= '0') {
     // Sun, Moon, or Planet
@@ -1386,7 +1481,7 @@ void tcintro() { // Startup screen for user
   newdelay(1600); // Give time for Serial2 to init
   TERMclear(); //Clear terminal screen and home cursor
   TERMtextcolor('g');
-  TCterminal.println("\nArduino SAMD Telescope Controller");
+  TCterminal.println("\nArduino SAMD51 Telescope Controller");
   TCterminal.print("Version ");
   TCterminal.println(tcversion);
   TCterminal.println("(c) 2022, MIT License");
@@ -1423,8 +1518,8 @@ void tcintro() { // Startup screen for user
   }
 
   WAITASEC(2);
-  LCDline3();
-  LCDprint(hitkey);
+  //LCDline3();
+  //LCDprint(hitkey);
   LCDscreenNum = 3;
   TERMtextcolor('w');
   //TCterminal.println(hitkey);
@@ -1438,34 +1533,34 @@ void tcintro() { // Startup screen for user
 void TC_main() {
   // This is the second half of the old Forth word TC
   // We do telescope initialization here to allow for re-initialization by user selection
-  boolean callscreenredraw = false;
+  //boolean callscreenredraw = false;
   if (NOTIMESETquestion()) {
     RESETIME();
     topEEPROMwrite();
-    callscreenredraw = true;
+    //callscreenredraw = true;
   }
   if (NOTINITquestion()) {
     if (MotorDriverflag) {
       INIT(); // Initialize telescope
       topEEPROMwrite();
-      callscreenredraw = true;
+      //callscreenredraw = true;
     }
     SETINITFLAG();
   }
   if (IRquestion()) {
     RESETIR(); // Initialize IR remote key decoding
     topEEPROMwrite();
-    callscreenredraw = true;
+    //callscreenredraw = true;
   }
   if (TCIquestion()) {
     RESETTCI(); // Initialize telescope options
     topEEPROMwrite();
-    callscreenredraw = true;
+    //callscreenredraw = true;
   }
   if (Displayquestion()) {
     RESETdisplay(); // Initialize display options
     topEEPROMwrite();
-    callscreenredraw = true;
+    //callscreenredraw = true;
   }
   // Main processing loop
   if (eecharbuf.strunion.SerialTermflag) updatestatusscreen(); // Update Status screen

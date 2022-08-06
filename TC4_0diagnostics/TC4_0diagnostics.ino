@@ -1,6 +1,6 @@
 /* Arduino SAMD-based Telescope Controller 4.00.00 Diagnostics - July 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO
 //
 // This sketch should be used to verify software library installation
@@ -24,6 +24,9 @@
 // Uncomment if associated Motor is moving backwards
 //#define REVERSE_AZIMUTH_MOTOR_DIRECTION
 //#define REVERSE_ALTITUDE_MOTOR_DIRECTION
+
+// Comment out if not using old magnetic compass
+#define __HMC6352__
 
 //****** End of User Defined Section ******************************************
 
@@ -109,7 +112,9 @@ IRdecode irdecoder;
 #include "SCMD_config.h"
 
 // Magnetic Compass Libraries
+#ifdef __HMC6352__
 #include <HMC6352.h> // https://github.com/funflin/HMC6352-Arduino-Library
+#endif
 //#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
 #include <SparkFun_MMC5983MA_Arduino_Library.h> // https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
 
@@ -170,11 +175,11 @@ ANSI ansi(&TCterminal); // VT100 support
 ANSI ansi2(&Serial2); // VT100 support
 #endif
 
-// Function declarations
+/* Function declarations
 // And for SAMD51 - can't use sercom5, 3, or 2
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
-// sercom2 - SPI
+// sercom2 - SPI */
 void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
@@ -263,7 +268,6 @@ int ACCEPT(char *buf, int limit) {
     }
   }
 }
-
 
 void setup() {
   Serial.begin(115200); //May use VT100 compatible terminal emulator
@@ -418,6 +422,7 @@ void setup() {
   // Test 8 - Several types of Magnetic Compass detection
   TCterminal.println("\nCheck for various magnetic compass hardware:");
   Serial2.println("\nCheck for various magnetic compass hardware:");
+#ifdef __HMC6352__
   HMC6352.Wake();  // This is the really old EOL compass
   newdelay(20);
   FMAGHDG = HMC6352.GetHeading();
@@ -425,20 +430,28 @@ void setup() {
   if (FMAGHDG > 360.1) { //Old Magnetic Compass not detected at default I2C address
     TCterminal.println("HMC6352 Magnetic Compass not detected.");
     Serial2.println("HMC6352 Magnetic Compass not detected.");
+#endif
     /* Initialize the HMC6343 and verify its physical presence
     if (dobHMC6343.init()) {
       TCterminal.println("HMC6343 Magnetic Compass detected.");
       Serial2.println("HMC6343 Magnetic Compass detected.");
     } // */
+    TCterminal.println("MMC5983MA Magnetic Compass ");
+    Serial2.println("MMC5983MA Magnetic Compass ");
     if (MMC5983MAmag.begin()) {
-      TCterminal.println("MMC5983MA Magnetic Compass detected.");
-      Serial2.println("MMC5983MA Magnetic Compass detected.");
+      TCterminal.println("detected.");
+      Serial2.println("detected.");
       MMC5983MAmag.softReset();
-    }
+    } else {
+      TCterminal.println("not detected.");
+      Serial2.println("not detected.");
+	}
+#ifdef __HMC6352__
   } else { // Old Magnetic Compass online
     TCterminal.println("HMC6352 Magnetic Compass detected.");
     Serial2.println("HMC6352 Magnetic Compass detected.");
   }
+#endif
   TCterminal.println("");
   Serial2.println("");
 

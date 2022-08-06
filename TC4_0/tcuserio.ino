@@ -1,7 +1,7 @@
 /* Telescope Controller 4.00.00 - User I/O functions
 // September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #include "tcheader.h"
@@ -19,10 +19,12 @@ void oledprintData() {
       oled.print(FPINHG, 2);
       oled.print(" InHg");
     }
+#ifdef __HMC6352__
     if (getMagCompassPresent()) {
       oled.print(FMAGHDG, 1);
       oled.print(" Hdg \n");
     }
+#endif
     // ...and time
     print2digits((int)myAstro.getLT());
     oled.print(":");
@@ -41,12 +43,12 @@ void printstatusscreen() {
     oled.clear(ALL);
     oled.display();
   }
-  myAstro.setTimeZone(TZONE);
+  myAstro.setTimeZone(eecharbuf.strunion.DTZONE);
   if (DSTAUTOFLAG) DSTFLAG = myAstro.useAutoDST();
   TERMclear();
   TERMcursor();
   TERMtextcolor('g');
-  TCterminal.print("Arduino SAMD Telescope Controller ");
+  TCterminal.print("Arduino SAMD51 Telescope Controller ");
   TCterminal.println(tcversion);
   TERMtextcolor('r');
   TCterminal.println("Site ID:"); // Default");
@@ -64,7 +66,11 @@ void printstatusscreen() {
 	}
     //  111.1* F     48.7%     29.92" Mg
     TERMtextcolor('w'); printBME280(); TCterminal.println(""); TERMtextcolor('r');
-  } else if (getMagCompassPresent()) {
+  } else if (
+#ifdef __HMC6352__
+  getMagCompassPresent() ||
+#endif
+  MMC5983MAMagCompasspresent) {
     TCterminal.println("                                               Compass Hdg\n");
   } else {
     TCterminal.println(" \n");
@@ -84,8 +90,6 @@ void printstatusscreen() {
   //270^ 40' 33"  89* 33' 20"  22h 33m 21s -22^ 22' 12'  80.1    50.3
   TCterminal.println("Target Object:");
   TCterminal.println("Current Diffs from Target:"); //  V xxxx  > xxxx");
-  //TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Magnetic");
-  //TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  Variation");
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Current  Magnetic");
   TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  (mA)     Variation");
@@ -104,7 +108,8 @@ void printstatusscreen() {
   TERMxy(0, 5); showDate(); //Print date
   //Time Zone
   TERMxy(22, 5);
-  switch (TZONE) {
+  int TimeZoneTmp = eecharbuf.strunion.DTZONE;
+  switch (TimeZoneTmp) {
     case -11: TCterminal.print("SST"); break;
     case -10: TCterminal.print("HWI"); break;
     case -9:  TCterminal.print("AK"); break;
@@ -317,22 +322,34 @@ void printBME280LCD() {
 
 void updatestatusscreen() {
   double ftmp, ftmp2, ftmplat, ftmplong, ftmpalt;
-  int itmp;
+  int itmp = GRDAY;
   byte tmpminutes;
   boolean tmpflag, azimuthchanged, altitudechanged;
   float tmpMagVariation = magVariation;
+  boolean magVariationUpdateFlag = false;
 
   azimuthchanged = false;
   altitudechanged = false;
+  
+  if (DSTAUTOFLAG) tmpflag = myAstro.useAutoDST();
+  DateTime now = rtczero.now();
+  rtchours = (byte)now.hour();
+  tmpminutes = rtcmin;
+  rtcmin = (byte)now.minute();
+  rtcseconds = now.second();
+
   ftmplat = FLATITUDE;
-  FLATITUDE = eecharbuf.strunion.FLATITUDE = ubloxGPS.getLatitude() / 10000000.;
   ftmplong = FLONGITUDE;
-  FLONGITUDE = eecharbuf.strunion.FLONGITUDE = ubloxGPS.getLongitude() / 10000000.;
   ftmpalt = FALTEMP;
-  FALTEMP = eecharbuf.strunion.ELEVATION = ubloxGPS.getAltitude() * 0.00328084; //Elevation in feet
+  // Only read GPS once per minute, to cut down on unnecessary I2C traffic
+  if (rtcseconds == 0) {
+    FLATITUDE = eecharbuf.strunion.FLATITUDE = ubloxGPS.getLatitude() / 10000000.;
+    FLONGITUDE = eecharbuf.strunion.FLONGITUDE = ubloxGPS.getLongitude() / 10000000.;
+    FALTEMP = eecharbuf.strunion.ELEVATION = ubloxGPS.getAltitude() * 0.00328084; //Elevation in feet
+    itmp = (byte)ubloxGPS.getDay();
+  }
 
   // Update data on status screen
-  itmp = (byte)ubloxGPS.getDay();
   if (eecharbuf.strunion.SerialTermflag) TCterminal.print("  ");
   tmpflag = DSTFLAG;
   if (GRDAY != itmp) {
@@ -343,17 +360,8 @@ void updatestatusscreen() {
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(0, 5); showDate(); //Print date
     }
-    //tmpflag = myAstro.useAutoDST();
-    //tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
   }
-  tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
-  if (DSTAUTOFLAG) tmpflag = myAstro.useAutoDST();
-  DateTime now = rtczero.now();
-  rtchours = (byte)now.hour();
-  tmpminutes = rtcmin;
-  rtcmin = (byte)now.minute();
-  rtcseconds = now.second();
-
+  
   // Print Time(s)
   myAstro.setGMTtime(rtchours, rtcmin, rtcseconds);
   if (eecharbuf.strunion.SerialTermflag) {
@@ -386,6 +394,7 @@ void updatestatusscreen() {
     }
     //FLATITUDE = ftmplat;
     myAstro.setLatLong(FLATITUDE, FLONGITUDE);
+	magVariationUpdateFlag = true;
   }
   if (fabs(ftmplong - FLONGITUDE) > 0.001) {
     if (eecharbuf.strunion.SerialTermflag) {
@@ -398,7 +407,9 @@ void updatestatusscreen() {
     }
     //FLONGITUDE = ftmplong;
     myAstro.setLatLong(FLATITUDE, FLONGITUDE);
+	magVariationUpdateFlag = true;
   }
+  if (magVariationUpdateFlag) tmpMagVariation = magneticDeclination(FLATITUDE, FLONGITUDE, GRYEAR, GRMONTH, GRDAY);
   //*
   // Elevation from GPS
   if (fabs(ftmpalt - FALTEMP) > 0.5) {
@@ -419,24 +430,26 @@ void updatestatusscreen() {
     printBME280();
   }
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
-  if (getMagCompassPresent()) {
-    ftmp = getMagCompassHeading();
-    if (FMAGHDG != ftmp) {
-      FMAGHDG = ftmp;
-      if (eecharbuf.strunion.SerialTermflag) {
-        TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
+#ifdef __HMC6352__
+    if (getMagCompassPresent()) {
+      ftmp = getMagCompassHeading();
+      if (FMAGHDG != ftmp) {
+        FMAGHDG = ftmp;
+        if (eecharbuf.strunion.SerialTermflag) {
+          TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
+        }
       }
     }
-  }
-  if (MMC5983MAMagCompasspresent) {
-    ftmp = getMMC5983MagCompassHeading();
-    if (FMAGHDG != ftmp) {
-      FMAGHDG = ftmp;
-      if (eecharbuf.strunion.SerialTermflag) {
-        TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
+#endif
+    if (MMC5983MAMagCompasspresent) {
+      ftmp = getMMC5983MagCompassHeading();
+      if (FMAGHDG != ftmp) {
+        FMAGHDG = ftmp;
+        if (eecharbuf.strunion.SerialTermflag) {
+          TERMxy(48, 8); TCterminal.print(FMAGHDG, 1); TCterminal.print("  ");
+        }
       }
     }
-  }
   }
   //*
   //Current position
@@ -585,6 +598,7 @@ void updatestatusscreen() {
     }
   }
 
+  /* We won't print this normally, to save time and power
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   if (getRockerTiltPresent()) {
     if (rockerTilt.isConnected()) {
@@ -618,7 +632,7 @@ void updatestatusscreen() {
       } else tubeTilt.reset();
     } else tubeTilt.reset();
   }
-  }
+  } // */
   if (eecharbuf.strunion.INA219flag && (tmpminutes != rtcmin)) {
     // Only update once a minute to reduce needed screen writes
     // Compute load voltage
@@ -637,7 +651,7 @@ void updatestatusscreen() {
       }
     }
   }
-  if (magVariation != tmpMagVariation) {
+  if (magVariationUpdateFlag && (fabs(magVariation - tmpMagVariation) > 0.1)) {
     magVariation = tmpMagVariation;
     if (eecharbuf.strunion.SerialTermflag) {
       TERMxy(69, 21); TCterminal.print(magVariation);

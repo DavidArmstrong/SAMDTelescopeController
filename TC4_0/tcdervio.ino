@@ -1,7 +1,7 @@
 /* Telescope Controller 4.00.00 - Derived I/O functions
 // September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #include "tcheader.h"
@@ -203,7 +203,17 @@ double GETFDECNUM() {
   //Get a floating point number from user, in int.fraction format
   //Allow for negative numbers
   char PAD[13];
-  int len;
-  len = ACCEPT(PAD, 12); //Get 12 chars max
+  int inputstrlen;
+  inputstrlen = ACCEPT(PAD, 12); //Get 12 chars max
+  return atof(PAD);
+}
+
+double GETFDECNUM(float n) {
+  //Get a floating point number from user, in int.fraction format
+  //Allow for negative numbers
+  char PAD[13];
+  int inputstrlen;
+  inputstrlen = ACCEPT(PAD, 12); //Get 12 chars max
+  if (inputstrlen == 1) return n;
   return atof(PAD);
 }
