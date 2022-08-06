@@ -1,7 +1,7 @@
 /* Telescope Controller 4.00.00 - Variables, Constants, Basic I/O, and Floating Point related routines
 // September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #include "tcheader.h"
@@ -56,7 +56,7 @@ void EMIT(char n) {
   LCDprint(n);
 }
 
-long GETnum(char* buf) { //convert string to double number
+long GETnum(char* buf) { //convert string to long number
   return atol(buf);
 }
 
@@ -356,10 +356,11 @@ boolean CHKNUM() {
   return flag;
 }
 
+#ifdef __HMC6352__
 boolean getMagCompassPresent() {
   return MagCompasspresent;
 }
-
+#endif
 float magneticDeclination(float Latitude, float Longitude, uint8_t year, uint8_t month, uint8_t day) {
   float declination; // magnetic variation from True North
   declination = myDeclination.magneticDeclination(Latitude, Longitude, year, month, day);
@@ -367,6 +368,7 @@ float magneticDeclination(float Latitude, float Longitude, uint8_t year, uint8_t
   return declination;
 }
 
+#ifdef __HMC6352__
 float getMagCompassHeading() {
   float FMAGHDG;
   HMC6352.Wake();
@@ -375,6 +377,8 @@ float getMagCompassHeading() {
   HMC6352.Sleep();
   return FMAGHDG;
 }
+#endif
+
 double getMMC5983MagCompassHeading() {
   unsigned int rawValue = 0;
     double heading = 0;
@@ -436,8 +440,14 @@ double getAltitude() {
   return faltitudenow;
 }
 double getAzimuth() {
-  RAAZ = 0L; RAAZenc.read();
-  double fazimuthnow = (double)RAAZ * 360.0 / (double)RRAAZ;
+  //TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
+  RAAZ = RAAZenc.read();
+  double fazimuthnow = 0.;
+  if (magOffsetComputed) {
+  fazimuthnow = (double)(RAAZ + AzimuthMagneticEncoderOffset + magVariationInAzimuthCounts) * 360.0 / (double)RRAAZ;
+  } else {
+  fazimuthnow = (double)(RAAZ) * 360.0 / (double)RRAAZ;
+  }
   return fazimuthnow;
 }
 
@@ -466,7 +476,7 @@ boolean getZenithRefSensor() {
   return (digitalRead(ZENITHlim) == LOW);
 }
 
-boolean startMotorToTarget(int motor, int direction, long position) {
+boolean startMotorToTarget(int motor, int direction, long currentPosition, long targetPosition) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.
   // uses i2cMotorDriver.setDrive( motorNum, direction, level ) to drive the motor

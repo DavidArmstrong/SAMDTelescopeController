@@ -1,7 +1,7 @@
 /* Telescope Controller 4.00.00 - Header file
 // September 2022
 // See MIT LICENSE.md file and ReadMe.md file for essential information
-// Highly tailored to the Sparkfun Redboard Turbo or AdaFruit M4 Metro
+// Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #ifndef TC4_0_H
@@ -128,7 +128,9 @@ const int BME280_ADR = 0x77;
 #include "SAMD51_InterruptTimer.h"
 
 // Magnetic Compass Libraries
+#ifdef __HMC6352__
 #include <HMC6352.h> // https://github.com/funflin/HMC6352-Arduino-Library
+#endif
 //#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
 #include <SparkFun_MMC5983MA_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_MMC5983MA
 // https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
@@ -141,7 +143,7 @@ const int BME280_ADR = 0x77;
 //=========================================
 // EEPROM definitions
 const int MAXUCOORD = 200; // maximum number of User Defined Coordinates
-const int EEcheckByte = 0x50;
+const int EEcheckByte = 0x59;
 struct EEstruct {
   double dummy;
   double FtiltXrockeroff;
@@ -160,6 +162,7 @@ struct EEstruct {
   long RRAAZ; //Default encoder range for RA/Azimuth
   long RDECAL; //Default encoder range for Declination/Altitude
   long AZOFFSET; //Encoder count Offset of Azimuth Reference Sensor from True North
+  long ALOFFSET; //Encoder count Offset of Altitude Horizon Sensor from Level with horizon
   int ELEVATION; // default elevation
   int EEchk;
   boolean DSTFLAG; // Set to true if Daylight Savings time is in effect
@@ -241,7 +244,6 @@ boolean INITFLAG;  // Telescope mount initialized flag
 boolean TIMEFLAG;  // Time initialized flag
 boolean DSTFLAG;  // Set to true if Daylight Savings time is in effect
 boolean DSTAUTOFLAG; // Set to true if we automatically compute if DST is in effect - US Only
-int TZONE;  // System Time Zone offset from GMT
 
 byte inputstrlen;
 
@@ -249,13 +251,12 @@ long RAAZ;  // Current encoder counts in RA/Azimuth
 long DECAL;  // Current encoder counts in Declination/Altitude
 long TcRAAZ;  // Target encoder counts in RA/Azimuth
 long TcDECAL;  // Target encoder counts in Declination/Altitude
-double TRA;  // Target RA in hours
-double TDEC;  // Target Declination in degrees
 long RRAAZ;  // Known rangle of encoder counts in RA/Azimuth
 long RDECAL;  // Known rangle of encoder counts in Declination/Altitude
 double previousTRA, previousTDEC;
-double TAZIMUTH;
-double TALTITUDE;
+double TAZIMUTH; // Target Azimuth in degrees from North - used in Displays
+double TALTITUDE; // Target Altitude in degrees
+
 long LATEMP;
 double FALTEMP;  // store floating # altitude
 int GRYEAR;
@@ -264,9 +265,13 @@ long TIMER; //Double seconds time count
 int rtcseconds, rtcmin, rtchours;
 int hmsseconds, hmsmin, hmshours;
 char siteid[70];
+
 double FLONGITUDE, FLATITUDE;  // degrees
-double FAZIMUTH, FALTITUDE;
-double FRA, FDEC;
+double FAZIMUTH, FALTITUDE; // degrees
+double FRA, FDEC; // Current RA in hours, Declination in degrees
+double TRA;  // Target RA in hours
+double TDEC;  // Target Declination in degrees
+
 boolean ERRFLAG;  // error variable flag
 double FHEIGHT;  // FP elevation in feet
 double FTEMPF;  // Temperature in Farenheit for refraction
@@ -278,6 +283,7 @@ float busvolts, current_mA; // Bus voltage, current as measured by INA219
 float magVariation; // Magnetic Declination or Variation
 long magVariationInAzimuthCounts;
 double AzimuthMagneticEncoderOffset;
+boolean magOffsetComputed;
 int LCDbrightness;
 
 // need to make auto star select table
@@ -402,7 +408,9 @@ void TERMtextcolor( char buf );
 void WAITASEC(int n);
 void newdelay( long interval );
 boolean CHKNUM();
+#ifdef __HMC6352__
 boolean getMagCompassPresent(void);
+#endif
 float magneticDeclination(float Latitude, float Longitude, uint8_t year, uint8_t month, uint8_t day);
 float getMagCompassHeading(void);
 double getMMC5983MagCompassHeading(void);
@@ -413,7 +421,7 @@ double getAzimuth(void);
 boolean getAzRefSensor();
 boolean getHorizonRefSensor();
 boolean getZenithRefSensor();
-boolean startMotorToTarget(int motor, int direction, long position);
+boolean startMotorToTarget(int motor, int direction, long currentPosition, long targetPosition);
 boolean driveMotor(int motor, int direction, int speed);
 boolean driveMotorStop(int motor);
 
@@ -433,6 +441,7 @@ int GETINUM(int n);
 long CONVHMS(char *buf);
 long INPUTHMS();
 double GETFDECNUM();
+double GETFDECNUM(float n);
 
 // TCUSERIO
 void oledprintData();
