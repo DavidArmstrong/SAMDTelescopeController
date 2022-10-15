@@ -12955,8 +12955,9 @@ Header</text>
 <text x="157.48" y="86.36" size="1.778" layer="91">Encoder Level Shifter Header</text>
 <text x="111.76" y="134.62" size="1.778" layer="91">LCD/Reference Sensor
 Level Shifter Header</text>
-<text x="50.8" y="63.5" size="1.778" layer="91">XBee Header
-M4 Metro connections</text>
+<text x="50.8" y="60.96" size="1.778" layer="91">XBee Header
+M4 Metro connections
+shown</text>
 <text x="15.24" y="66.04" size="1.778" layer="91">QWIIC</text>
 <text x="119.38" y="48.26" size="1.778" layer="91">Lock
 Switch</text>
@@ -13134,13 +13135,13 @@ Inclinometer Headers</text>
 <instance part="J4" gate="J$1" x="50.8" y="22.86" smashed="yes" rot="MR0">
 <attribute name="NAME" x="53.34" y="28.448" size="1.778" layer="95" font="vector" rot="MR0"/>
 </instance>
-<instance part="JP2" gate="G$1" x="111.76" y="81.28" smashed="yes" rot="R180">
-<attribute name="NAME" x="111.506" y="89.662" size="1.778" layer="95"/>
-<attribute name="VALUE" x="116.84" y="91.44" size="1.778" layer="96" rot="R180"/>
+<instance part="JP2" gate="G$1" x="114.3" y="81.28" smashed="yes" rot="R180">
+<attribute name="NAME" x="114.046" y="89.662" size="1.778" layer="95"/>
+<attribute name="VALUE" x="119.38" y="91.44" size="1.778" layer="96" rot="R180"/>
 </instance>
-<instance part="JP7" gate="G$1" x="129.54" y="78.74" smashed="yes">
-<attribute name="VALUE" x="124.46" y="68.58" size="1.778" layer="96"/>
-<attribute name="NAME" x="124.46" y="89.662" size="1.778" layer="95"/>
+<instance part="JP7" gate="G$1" x="127" y="78.74" smashed="yes">
+<attribute name="VALUE" x="121.92" y="68.58" size="1.778" layer="96"/>
+<attribute name="NAME" x="121.92" y="89.662" size="1.778" layer="95"/>
 </instance>
 </instances>
 <busses>
@@ -13278,13 +13279,13 @@ Inclinometer Headers</text>
 </segment>
 <segment>
 <pinref part="JP7" gate="G$1" pin="4"/>
-<wire x1="134.62" y1="81.28" x2="137.16" y2="81.28" width="0.1524" layer="91"/>
-<label x="137.16" y="81.28" size="1.27" layer="95" xref="yes"/>
+<wire x1="132.08" y1="81.28" x2="139.7" y2="81.28" width="0.1524" layer="91"/>
+<label x="139.7" y="81.28" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
 <pinref part="JP2" gate="G$1" pin="3"/>
-<wire x1="106.68" y1="81.28" x2="104.14" y2="81.28" width="0.1524" layer="91"/>
-<label x="104.14" y="81.28" size="1.27" layer="95" rot="MR0" xref="yes"/>
+<wire x1="109.22" y1="81.28" x2="99.06" y2="81.28" width="0.1524" layer="91"/>
+<label x="99.06" y="81.28" size="1.27" layer="95" rot="MR0" xref="yes"/>
 </segment>
 <segment>
 <pinref part="J13" gate="J1" pin="2"/>
@@ -13331,6 +13332,11 @@ Inclinometer Headers</text>
 <wire x1="63.5" y1="154.94" x2="66.04" y2="154.94" width="0.1524" layer="91"/>
 <label x="66.04" y="154.94" size="1.27" layer="95" xref="yes"/>
 </segment>
+<segment>
+<pinref part="J13" gate="J1" pin="3"/>
+<wire x1="60.96" y1="76.2" x2="63.5" y2="76.2" width="0.1524" layer="91"/>
+<label x="63.5" y="76.2" size="1.27" layer="95" xref="yes"/>
+</segment>
 </net>
 <net name="D5" class="0">
 <segment>
@@ -13362,6 +13368,11 @@ Inclinometer Headers</text>
 <wire x1="63.5" y1="147.32" x2="66.04" y2="147.32" width="0.1524" layer="91"/>
 <label x="66.04" y="147.32" size="1.27" layer="95" xref="yes"/>
 </segment>
+<segment>
+<pinref part="J13" gate="J1" pin="4"/>
+<wire x1="60.96" y1="78.74" x2="63.5" y2="78.74" width="0.1524" layer="91"/>
+<label x="63.5" y="78.74" size="1.27" layer="95" xref="yes"/>
+</segment>
 </net>
 <net name="D8" class="0">
 <segment>
@@ -13383,8 +13394,8 @@ Inclinometer Headers</text>
 </segment>
 <segment>
 <pinref part="JP7" gate="G$1" pin="3"/>
-<wire x1="134.62" y1="78.74" x2="137.16" y2="78.74" width="0.1524" layer="91"/>
-<label x="137.16" y="78.74" size="1.27" layer="95" xref="yes"/>
+<wire x1="132.08" y1="78.74" x2="139.7" y2="78.74" width="0.1524" layer="91"/>
+<label x="139.7" y="78.74" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="D10" class="0">
@@ -13395,8 +13406,8 @@ Inclinometer Headers</text>
 </segment>
 <segment>
 <pinref part="JP2" gate="G$1" pin="4"/>
-<wire x1="106.68" y1="78.74" x2="104.14" y2="78.74" width="0.1524" layer="91"/>
-<label x="104.14" y="78.74" size="1.27" layer="95" rot="MR0" xref="yes"/>
+<wire x1="109.22" y1="78.74" x2="99.06" y2="78.74" width="0.1524" layer="91"/>
+<label x="99.06" y="78.74" size="1.27" layer="95" rot="MR0" xref="yes"/>
 </segment>
 </net>
 <net name="D11" class="0">
@@ -13515,6 +13526,16 @@ Inclinometer Headers</text>
 <pinref part="ICSP" gate="G$1" pin="4"/>
 <label x="35.56" y="111.76" size="1.27" layer="95" font="vector" xref="yes"/>
 </segment>
+<segment>
+<pinref part="JP2" gate="G$1" pin="6"/>
+<wire x1="109.22" y1="73.66" x2="106.68" y2="73.66" width="0.1524" layer="91"/>
+<label x="106.68" y="73.66" size="1.27" layer="95" rot="MR0" xref="yes"/>
+</segment>
+<segment>
+<pinref part="JP7" gate="G$1" pin="1"/>
+<wire x1="132.08" y1="73.66" x2="134.62" y2="73.66" width="0.1524" layer="91"/>
+<label x="134.62" y="73.66" size="1.27" layer="95" xref="yes"/>
+</segment>
 </net>
 <net name="MISO" class="0">
 <segment>
@@ -13522,12 +13543,32 @@ Inclinometer Headers</text>
 <pinref part="ICSP" gate="G$1" pin="1"/>
 <label x="12.7" y="114.3" size="1.27" layer="95" font="vector" rot="R180" xref="yes"/>
 </segment>
+<segment>
+<pinref part="JP2" gate="G$1" pin="5"/>
+<wire x1="109.22" y1="76.2" x2="106.68" y2="76.2" width="0.1524" layer="91"/>
+<label x="106.68" y="76.2" size="1.27" layer="95" rot="MR0" xref="yes"/>
+</segment>
+<segment>
+<pinref part="JP7" gate="G$1" pin="2"/>
+<wire x1="132.08" y1="76.2" x2="134.62" y2="76.2" width="0.1524" layer="91"/>
+<label x="134.62" y="76.2" size="1.27" layer="95" xref="yes"/>
+</segment>
 </net>
 <net name="SCK" class="0">
 <segment>
 <wire x1="15.24" y1="111.76" x2="12.7" y2="111.76" width="0.1524" layer="91"/>
 <pinref part="ICSP" gate="G$1" pin="3"/>
 <label x="12.7" y="111.76" size="1.27" layer="95" font="vector" rot="R180" xref="yes"/>
+</segment>
+<segment>
+<pinref part="JP2" gate="G$1" pin="1"/>
+<wire x1="109.22" y1="86.36" x2="99.06" y2="86.36" width="0.1524" layer="91"/>
+<label x="99.06" y="86.36" size="1.27" layer="95" rot="MR0" xref="yes"/>
+</segment>
+<segment>
+<pinref part="JP7" gate="G$1" pin="6"/>
+<wire x1="132.08" y1="86.36" x2="139.7" y2="86.36" width="0.1524" layer="91"/>
+<label x="139.7" y="86.36" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="REF" class="0">
@@ -13719,18 +13760,14 @@ Inclinometer Headers</text>
 <label x="40.64" y="20.32" size="1.27" layer="95" rot="MR0" xref="yes"/>
 </segment>
 <segment>
-<pinref part="JP7" gate="G$1" pin="6"/>
-<wire x1="134.62" y1="86.36" x2="137.16" y2="86.36" width="0.1524" layer="91"/>
-</segment>
-<segment>
 <pinref part="JP7" gate="G$1" pin="5"/>
-<wire x1="134.62" y1="83.82" x2="137.16" y2="83.82" width="0.1524" layer="91"/>
-<label x="137.16" y="83.82" size="1.27" layer="95" xref="yes"/>
+<wire x1="132.08" y1="83.82" x2="139.7" y2="83.82" width="0.1524" layer="91"/>
+<label x="139.7" y="83.82" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
 <pinref part="JP2" gate="G$1" pin="2"/>
-<wire x1="106.68" y1="83.82" x2="104.14" y2="83.82" width="0.1524" layer="91"/>
-<label x="104.14" y="83.82" size="1.27" layer="95" rot="MR0" xref="yes"/>
+<wire x1="109.22" y1="83.82" x2="99.06" y2="83.82" width="0.1524" layer="91"/>
+<label x="99.06" y="83.82" size="1.27" layer="95" rot="MR0" xref="yes"/>
 </segment>
 <segment>
 <pinref part="J13" gate="J1" pin="1"/>
@@ -13931,48 +13968,6 @@ Inclinometer Headers</text>
 <pinref part="J11" gate="J$1" pin="3"/>
 <wire x1="43.18" y1="45.72" x2="40.64" y2="45.72" width="0.1524" layer="91"/>
 <label x="40.64" y="45.72" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-</net>
-<net name="N$2" class="0">
-<segment>
-<pinref part="JP2" gate="G$1" pin="1"/>
-<wire x1="106.68" y1="86.36" x2="104.14" y2="86.36" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$12" class="0">
-<segment>
-<pinref part="JP2" gate="G$1" pin="5"/>
-<wire x1="106.68" y1="76.2" x2="104.14" y2="76.2" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$13" class="0">
-<segment>
-<pinref part="JP2" gate="G$1" pin="6"/>
-<wire x1="106.68" y1="73.66" x2="104.14" y2="73.66" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$19" class="0">
-<segment>
-<pinref part="JP7" gate="G$1" pin="2"/>
-<wire x1="134.62" y1="76.2" x2="137.16" y2="76.2" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$20" class="0">
-<segment>
-<pinref part="JP7" gate="G$1" pin="1"/>
-<wire x1="134.62" y1="73.66" x2="137.16" y2="73.66" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$21" class="0">
-<segment>
-<pinref part="J13" gate="J1" pin="4"/>
-<wire x1="60.96" y1="78.74" x2="63.5" y2="78.74" width="0.1524" layer="91"/>
-</segment>
-</net>
-<net name="N$22" class="0">
-<segment>
-<pinref part="J13" gate="J1" pin="3"/>
-<wire x1="60.96" y1="76.2" x2="63.5" y2="76.2" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>

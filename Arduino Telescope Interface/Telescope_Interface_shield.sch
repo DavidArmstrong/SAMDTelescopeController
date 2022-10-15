@@ -12856,7 +12856,7 @@ will be further integrated into the Sparkfun Library for other footprints.  It c
 <sheet>
 <plain>
 <text x="40.64" y="175.26" size="2.032" layer="97" font="vector" ratio="15">Arduino Shield for
-Sparkfun Redboard Turbo
+Sparkfun SAMD51 Micro-Mod
 or Adafruit M4 Metro</text>
 <text x="40.64" y="121.92" size="1.651" layer="95" font="vector">Arduino_R3_Shield</text>
 <text x="17.78" y="137.16" size="1.778" layer="95" font="vector" rot="R90">Reset</text>
@@ -13461,6 +13461,11 @@ Inclinometer Headers</text>
 <wire x1="104.14" y1="35.56" x2="106.68" y2="35.56" width="0.1524" layer="91"/>
 <label x="106.68" y="35.56" size="1.27" layer="95" xref="yes"/>
 </segment>
+<segment>
+<pinref part="ICSP" gate="G$1" pin="2"/>
+<wire x1="33.02" y1="114.3" x2="35.56" y2="114.3" width="0.1524" layer="91"/>
+<label x="35.56" y="114.3" size="1.27" layer="95" xref="yes"/>
+</segment>
 </net>
 <net name="MOSI" class="0">
 <segment>
@@ -13685,11 +13690,6 @@ Inclinometer Headers</text>
 <wire x1="187.96" y1="101.6" x2="190.5" y2="101.6" width="0.1524" layer="91" style="longdash"/>
 <pinref part="JP4" gate="G$1" pin="4"/>
 <label x="190.5" y="101.6" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
-<wire x1="33.02" y1="114.3" x2="35.56" y2="114.3" width="0.1524" layer="91"/>
-<pinref part="ICSP" gate="G$1" pin="2"/>
-<label x="35.56" y="114.3" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
 <wire x1="20.32" y1="73.66" x2="22.86" y2="73.66" width="0.1524" layer="91"/>
