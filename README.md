@@ -1,9 +1,10 @@
 # SAMDTelescopeController
 
-Arduino SAMD51-based Telescope Controller 4.00.00
+## Arduino SAMD51-based Telescope Controller 4.00.00
 
-By David Armstrong, July 2022<br>
-See MIT LICENSE file<br>
+#### By David Armstrong, July 2022
+ - See MIT LICENSE file
+
 ========================================================================
 
 
@@ -37,7 +38,7 @@ not all.
 
 Here is a list of the libraries that the Arduino IDE Library Manager knows about that must be installed:
 
-'''
+```
 Adafruit INA219  https://github.com/adafruit/Adafruit_INA219
 ANSI  https://github.com/RobTillaart/ANSI
 CurveFitting  https://github.com/Rotario/arduinoCurveFitting
@@ -53,25 +54,25 @@ Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/Spa
 Sparkfun SerLCD Arduino Library  https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library
 Sparkfun u-blox GNSS Arduino Library  https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
 WMM_Tinier  https://github.com/DavidArmstrong/WMM_Tinier
-'''
+```
 
 There are also a few libraries that must be loaded directly from their on-line repositories:
 
-'''
+```
 SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects
 AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer
 HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library
 IRLib2  https://github.com/cyborg5/IRLib2
-'''
+```
 
 NOTE: That last library, 'IRLib2', has one file that *MUST* have two lines modified so that
 the sketch will compile successfully. In the library file at IRLibProtocols\IRLibSAMD51.h<br>
 You must change lines 18-19 as follows:
 
-'''
+```
 //#define IR_TCn 3
 #define IR_TCn 4
-'''
+```
 
 Otherwise, the application will NOT compile.
 
