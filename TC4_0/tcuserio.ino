@@ -596,8 +596,29 @@ void updatestatusscreen() {
         printObject();
       }
     }
+	//* Current Diffs from Target
+	TERMxy(29, 18);
+	long azdiff, aldiff;
+	azdiff = TcRAAZ - RAAZ;
+	aldiff = TcDECAL - DECAL;
+	if (azdiff > 0) {
+	  TCterminal.print("V");
+    } else if (azdiff < 0) {
+	  TCterminal.print("^");
+    } else {
+      TCterminal.print("-");
+    }
+    TCterminal.print("  ");
+    if (aldiff > 0) {
+	  TCterminal.print("<");
+    } else if (aldiff < 0) {
+	  TCterminal.print(">");
+    } else {
+      TCterminal.print("|");
+	}
+	// */
   }
-
+  
   /* We won't print this normally, to save time and power
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   if (getRockerTiltPresent()) {

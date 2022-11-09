@@ -1,7 +1,7 @@
 # SAMDTelescopeController
 Arduino SAMD51-based Telescope Controller 4.00.00 Diagnostics Sketch
 
-By David Armstrong, July 2022<br>
+By David Armstrong, October 2022<br>
 See MIT LICENSE.md file<br>
 ==================================================================
 

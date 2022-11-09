@@ -11,10 +11,13 @@
 // sercom3 - Serial1 on D0/D1
 // sercom5 - I2C pins for SCL/SDA
 // sercom2 - SPI */
+#ifdef _VARIANT_SAMD51_MICROMOD_
+#else
 void SERCOM4_0_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_1_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_2_Handler() { Serial2.IrqHandler(); }
 void SERCOM4_3_Handler() { Serial2.IrqHandler(); }
+#endif
 
 void eepromDefaults() {
   // Default values that we start with on a new EEPROM
