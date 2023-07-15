@@ -2898,8 +2898,6 @@ design rules under a new name.</description>
 <wire x1="14.4911" y1="34.18675" x2="4.18405" y2="23.8797" width="0.254" layer="16"/>
 <wire x1="14.4911" y1="36.84005" x2="14.4911" y2="34.18675" width="0.254" layer="16"/>
 <wire x1="6.02095" y1="6.63325" x2="6.112" y2="6.604" width="0.254" layer="16"/>
-<contactref element="ICSP" pad="2"/>
-<wire x1="28.448" y1="8.636" x2="30.43" y2="20.307" width="0" layer="19" extent="1-1"/>
 </signal>
 <signal name="MOSI">
 <contactref element="ICSP" pad="4"/>
@@ -3085,6 +3083,7 @@ design rules under a new name.</description>
 <contactref element="JP5" pad="4"/>
 <contactref element="JP8" pad="3.3V"/>
 <contactref element="JP4" pad="4"/>
+<contactref element="ICSP" pad="2"/>
 <contactref element="J3" pad="2"/>
 <contactref element="J4" pad="1"/>
 <contactref element="JP7" pad="5"/>
@@ -3117,6 +3116,7 @@ design rules under a new name.</description>
 <wire x1="36.84005" y1="8.67425" x2="36.7665" y2="8.5725" width="0.254" layer="16"/>
 <wire x1="43.0651" y1="11.53165" x2="43.1165" y2="11.557" width="0.254" layer="16"/>
 <wire x1="39.7995" y1="10.91935" x2="30.51295" y2="20.2059" width="0.254" layer="16"/>
+<wire x1="30.51295" y1="20.2059" x2="30.43" y2="20.307" width="0.254" layer="16"/>
 <wire x1="45.7184" y1="14.18495" x2="45.7184" y2="17.65465" width="0.254" layer="1"/>
 <wire x1="43.16715" y1="11.6337" x2="45.7184" y2="14.18495" width="0.254" layer="1"/>
 <wire x1="45.7184" y1="17.65465" x2="45.72" y2="17.78" width="0.254" layer="1"/>
@@ -3151,7 +3151,7 @@ design rules under a new name.</description>
 <wire x1="25.20635" y1="15.20545" x2="10.91935" y2="15.20545" width="0.254" layer="16"/>
 <wire x1="30.30885" y1="20.30795" x2="25.20635" y2="15.20545" width="0.254" layer="16"/>
 <wire x1="8.9804" y1="16.43005" x2="8.89" y2="16.51" width="0.254" layer="16"/>
-<wire x1="30.30885" y1="20.30795" x2="30.51295" y2="20.2059" width="0" layer="19" extent="16-16"/>
+<wire x1="30.30885" y1="20.30795" x2="30.43" y2="20.307" width="0.254" layer="16"/>
 </signal>
 <signal name="AL_B">
 <contactref element="JP3" pad="6"/>
