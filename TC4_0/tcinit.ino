@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Initialization and High level functionality
-// September 2022
+// July 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -43,6 +43,9 @@ void eepromDefaults() {
   eecharbuf.strunion.RDECAL = 4000L; // Altitude encoder range
   eecharbuf.strunion.AZOFFSET = 0L; // Encoder count Offset of Azimuth Reference from True North
   eecharbuf.strunion.ALOFFSET = 0L; // Encoder count Offset of Altitude Horizon Reference from level
+  eecharbuf.strunion.AzTweakOffsetCounts = 0L; // Count offsets based on last star sync
+  eecharbuf.strunion.AlTweakOffsetCounts = 0l;
+  AzTweakOffsetCounts = AlTweakOffsetCounts = 0L;
   eecharbuf.strunion.DTEMPF = 68.0; // Default temp in Farenheit
   //eecharbuf.strunion.DTZONE = -8.0; // Default Time Zone (PST)
   eecharbuf.strunion.FLATITUDE = 1.; // Latitude in radians
@@ -59,6 +62,15 @@ void eepromDefaults() {
   // Assume Demo mode on initial boot
   eecharbuf.strunion.enableRealHwInit = false;
   MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
+  // PID scaling values - We guess at these, or determine them empirically
+  eecharbuf.strunion.azKp = 1.0; // Azimuth motor Proportional gain
+  eecharbuf.strunion.azKi = 1.0; // Azimuth motor Integral gain
+  eecharbuf.strunion.azKd = 1.0; // Azimuth motor Derivative gain
+  eecharbuf.strunion.azN  = 5; // Azimuth derivative low pass filter time constant, 3 <= N <= 10
+  eecharbuf.strunion.alKp = 1.0; // Altitude motor Proportional gain
+  eecharbuf.strunion.alKi = 1.0; // Altitude motor Integral gain
+  eecharbuf.strunion.alKd = 1.0; // Altitude motor Derivative gain
+  eecharbuf.strunion.alN  = 5; // Altitude derivative low pass filter time constant, 3 <= N <= 10
   // Offset of Azimuth Encoder Range from measured Magnetic North
   AzimuthMagneticEncoderOffset = 0.;
   magOffsetComputed = false;
@@ -583,11 +595,21 @@ void inithardware() { //Set up all the hardware interfaces
       // Good data there, so read in the rest of the array
       int eestat = tcEEPROM.read(2L, eecharbuf.ebuf, sizeof(EEstruct));
       if (eestat == 0) {
-        LCDline4(); LCDprint("EEPROM read error ");
         DSTFLAG = eecharbuf.strunion.DSTFLAG;
         irsetup = eecharbuf.strunion.IRSETUPflag;
         TCIFLAG = eecharbuf.strunion.TCIFLAG;
-      }
+		// PID scaling values
+        azKp = eecharbuf.strunion.azKp; // Azimuth motor Proportional gain
+        azKi = eecharbuf.strunion.azKi; // Azimuth motor Integral gain
+        azKd = eecharbuf.strunion.azKd; // Azimuth motor Derivative gain
+        azN  = eecharbuf.strunion.azN;  // Azimuth derivative low pass filter time constant
+        alKp = eecharbuf.strunion.alKp; // Altitude motor Proportional gain
+        alKi = eecharbuf.strunion.alKi; // Altitude motor Integral gain
+        alKd = eecharbuf.strunion.alKd; // Altitude motor Derivative gain
+        alN  = eecharbuf.strunion.alN;  // Altitude derivative low pass filter time constant
+      } else {
+		LCDline4(); LCDprint("EEPROM read error ");
+	  }
     }
     eecharbuf.strunion.EEchk = EEcheckByte; // */
   }
@@ -716,10 +738,13 @@ void inithardware() { //Set up all the hardware interfaces
   
   // Have to have motor driver set up before we can start initializing the mount
   MotorDriverflag = eecharbuf.strunion.MotorDriverflag;
-  currentAzMtrSpeed = 0;
-  currentAlMtrSpeed = 0;
-  currentAzMtrDir = CW_DIRECTION;
-  currentAlMtrDir = CW_DIRECTION;
+  currentAzMtrSpeed = currentAlMtrSpeed = 0;
+  currentAzMtrDir = currentAlMtrDir = CW_DIRECTION;
+  AzPreviousMillis = AlPreviousMillis = millis();
+  azD0 = azD1 = azFd0 = azFd1 = 0.0;
+  alD0 = alD1 = alFd0 = alFd1 = 0.0;
+  azTau = azKd / (azKp*azN); // Azimuth IIR filter time constant
+  alTau = alKd / (alKp*alN); // Altitude IIR filter time constant
   if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     TCterminal.println("Motor driver setup.");
     i2cMotorDriver.settings.commInterface = I2C_MODE;
@@ -822,7 +847,8 @@ void inithardware() { //Set up all the hardware interfaces
 
   SETIRFLAG(); // Fake it that IR is already set up
   SETTCIFLAG(); // Fake it that TC Options are already set up
-  SETdisplayFLAG(); //Assume display is already set up
+  SETdisplayFLAG(); //Use default/EEPROM display options
+  SETPIDFLAG(); //Use default/EEPROM motor PID values
   SETINITFLAG(); // Assume telescope mount is initialized
   if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     if (getRockerTiltPresent()) rockerTilt.powerDownMode();
@@ -847,7 +873,7 @@ void INITZONE() {
   TCterminal.println(" i.e. EST=-5, CST=-6, MST=-7, PST=-8, etc.");
   TCterminal.println(" Don't include Daylight Savings Time here.");
   do {
-    TCterminal.print(" TZONE=["); TCterminal.print(eecharbuf.strunion.DTZONE); TCterminal.print("]=");
+    TCterminal.print(" Time Zone=["); TCterminal.print(eecharbuf.strunion.DTZONE); TCterminal.print("]=");
     LCDclear(); LCDline1(); LCDprint("TZONE=["); LCDprint(eecharbuf.strunion.DTZONE, 2); LCDprint("]=");
     tmp = GETFDECNUM(eecharbuf.strunion.DTZONE);
     TCterminal.println("");
@@ -873,15 +899,109 @@ void RESETIME() {
 
 void StarTweak() {
   // Allow 'tweaking' values of azimuth offset and altitude offset
-  // 1. Scan bright star table to get 3 star3 closest to 45 degrees altitude
+  int tmp = 1;
+  eecharbuf.strunion.AZOFFSET = 0L; // Encoder count Offset of Azimuth Reference from True North
+  eecharbuf.strunion.ALOFFSET = 0L; // Encoder count Offset of Altitude Horizon Reference from level
+  int star1num, star2num, star3num, planetnum;
+  int tweaknum[4] = { -1, -1, -1, -1 };
+  double star1alt, star2alt, star3alt, planetalt;
+  double tweakalt[3] = { 90.0, 90.0, 90.0, 90.0 };
+  star1num = star2num = star3num = planetnum = -1;
+  star1alt = star2alt = star3alt = planetalt = 90.0;
+  double starRA, starDec;
+  double tweakRA[4] = { 0., 0., 0., 0. };
+  double tweakDec[4] = { 0., 0., 0., 0. };
+
+  // 1. Scan bright star table to get 3 stars closest to 45 degrees altitude
+  for (int i=0; i < NISTARS; i++) {
+	  myObjects.selectStarTable(ISTARS[i]);
+      starRA = myObjects.getRAdec();
+      starDec = myObjects.getDeclinationDec();
+	  myAstro.setRAdec(starRA, starDec);
+	  if (eecharbuf.strunion.PFLAG) myAstro.doPrecessFrom2000();
+	  starRA = myAstro.getRAdec();
+      starDec = myAstro.getDeclinationDec();
+	  myAstro.doRAdec2AltAz();
+	  if (fabs(myAstro.getAltitude() - 45.) < tweakalt[0]) {
+		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		tweaknum[1] = tweaknum[0]; tweakRA{1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
+		tweaknum[0] = i; tweakRA[0] = starRA; tweakDec[0] = starDec;
+		tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]){
+		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		tweaknum[1] = i; tweakRA[1] = starRA; tweakDec[1] = starDec;
+		tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]){
+		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = i; tweakRA[2] = starRA; tweakDec[2] = starDec;
+		tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]){
+		tweaknum[3] = i; tweakRA[3] = starRA; tweakDec[3] = starDec;
+		tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
+	  }
+  }
+  // Also check planets: Venus, Mars, Jupiter, Saturn
+  for (int i=2; i < 7; i++) {
+	myObjects.selectStarTable(ISTARS[i]);
+    if (i != 3) {
+	  if (i == 2) myAstro.doVenus();
+	  if (i == 2) myAstro.doMars();
+	  if (i == 2) myAstro.doJupiter();
+	  if (i == 2) myAstro.doSaturn();
+	  starRA = myAstro.getRAdec();
+      starDec = myAstro.getDeclinationDec();
+	  myAstro.doRAdec2AltAz();
+      if (fabs(myAstro.getAltitude() - 45.) < tweakalt[0]) {
+	    tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		tweaknum[1] = tweaknum[0]; tweakRA{1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
+		tweaknum[0] = -i; tweakRA[0] = starRA; tweakDec[0] = starDec;
+		tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]){
+		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		tweaknum[1] = -i; tweakRA[1] = starRA; tweakDec[1] = starDec;
+		tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]){
+		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		tweaknum[2] = -i; tweakRA[2] = starRA; tweakDec[2] = starDec;
+		tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]){
+		tweaknum[3] = -i; tweakRA[3] = starRA; tweakDec[3] = starDec;
+		tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
+	  }
+	}
+  }
+
   // 2. User selects one (First is default)
+  TCterminal.println("\n Choose a Star or planet to tweak the pointing algorithm.");
+  for (int i=2; i < 7; i++) {
+  }
+  TCterminal.print(" 1. ");
+  TCterminal.println(myObjects.printStarName(star1num));
+  TCterminal.print(" 2. ");
+  TCterminal.println(myObjects.printStarName(star1num));
+  TCterminal.print(" 3. ");
+  TCterminal.println(myObjects.printStarName(star1num));
+  TCterminal.print(" 4. ");
+  PRPLANET(planetnum);
+  TCterminal.println("");
+  do {
+    TCterminal.print(" Object num=["); TCterminal.print(tmp); TCterminal.print("]=");
+    LCDclear(); LCDline1(); LCDprint("AzKp=["); LCDprint(eecharbuf.strunion.azKp, 2); LCDprint("]=");
+    tmp = GETINUM();
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
   // 3. Aim telescope to target star
   // 4. Request star centered manually
   // 5. Get Azimuth and Altitude encoder counts, and save the diffs as offsets for each axis
-  eecharbuf.strunion.AZOFFSET = 0L; // Encoder count Offset of Azimuth Reference from True North
-  eecharbuf.strunion.ALOFFSET = 0L; // Encoder count Offset of Altitude Horizon Reference from level
+  //AzTweakOffsetCounts = ;
+  //AlTweakOffsetCounts = ;
   return;
 }
+
 void INIT() {
   if (eecharbuf.strunion.enableRealHwInit) {
     if (getRockerTiltPresent()) rockerTilt.WakeMeUp();
@@ -934,6 +1054,7 @@ void INIT() {
     AltitudeEncoderInitialized = true;
   }
   // 7. Check with reference star - done elsewhere
+  //StarTweak();
   
   if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     if (getRockerTiltPresent()) rockerTilt.powerDownMode();
@@ -1153,6 +1274,94 @@ void RESETdisplay() {
   SETdisplayFLAG();
 }
 
+void RESETPID() {
+  TCterminal.println(" Update Motor PID parameters.");
+  TCterminal.println(" For each paramter, press ENTER to accept the current value.\n");
+  float tmp = 0;
+  do {
+    TCterminal.print(" Azimuth Kp=["); TCterminal.print(eecharbuf.strunion.azKp); TCterminal.print("]=");
+    LCDclear(); LCDline1(); LCDprint("AzKp=["); LCDprint(eecharbuf.strunion.azKp, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.azKp);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    azKp = eecharbuf.strunion.azKp = tmp;
+    TCterminal.println("");
+  }
+  do {
+    TCterminal.print(" Azimuth Ki=["); TCterminal.print(eecharbuf.strunion.azKi); TCterminal.print("]=");
+    LCDline2(); LCDprint("AzKi=["); LCDprint(eecharbuf.strunion.azKi, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.azKi);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    azKi = eecharbuf.strunion.azKi = tmp;
+    TCterminal.println("");
+  }
+  do {
+    TCterminal.print(" Azimuth Kd=["); TCterminal.print(eecharbuf.strunion.azKd); TCterminal.print("]=");
+    LCDline3(); LCDprint("AzKd=["); LCDprint(eecharbuf.strunion.azKd, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.azKd);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    azKd = eecharbuf.strunion.azKd = tmp;
+    TCterminal.println("");
+  }
+  TCterminal.print(" Azimuth N must be in the range 3 <= N <= 10");
+  do {
+    TCterminal.print(" Azimuth N=["); TCterminal.print(eecharbuf.strunion.azN); TCterminal.print("]=");
+    LCDline4(); LCDprint("AzN=["); LCDprint(eecharbuf.strunion.azN, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.azN);
+    TCterminal.println("");
+  } while (tmp < 3. || tmp > 10.);
+  if (inputstrlen != 0) {
+    azN = eecharbuf.strunion.azN = tmp;
+    TCterminal.println("");
+  }
+  do {
+    TCterminal.print(" Altitude Kp=["); TCterminal.print(eecharbuf.strunion.alKp); TCterminal.print("]=");
+    LCDclear(); LCDline1(); LCDprint("AlKp=["); LCDprint(eecharbuf.strunion.alKp, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.alKp);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    alKp = eecharbuf.strunion.alKp = tmp;
+    TCterminal.println("");
+  }
+  do {
+    TCterminal.print(" Altitude Ki=["); TCterminal.print(eecharbuf.strunion.alKi); TCterminal.print("]=");
+    LCDline2(); LCDprint("AlKi=["); LCDprint(eecharbuf.strunion.alKi, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.alKi);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    alKi = eecharbuf.strunion.alKi = tmp;
+    TCterminal.println("");
+  }
+  do {
+    TCterminal.print(" Altitude Kd=["); TCterminal.print(eecharbuf.strunion.alKd); TCterminal.print("]=");
+    LCDline3(); LCDprint("AlKd=["); LCDprint(eecharbuf.strunion.alKd, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.alKd);
+    TCterminal.println("");
+  } while (tmp < -120. || tmp > 120.);
+  if (inputstrlen != 0) {
+    alKd = eecharbuf.strunion.alKd = tmp;
+    TCterminal.println("");
+  }
+  TCterminal.print(" Altitude N must be in the range 3 <= N <= 10");
+  do {
+    TCterminal.print(" Altitude N=["); TCterminal.print(eecharbuf.strunion.alN); TCterminal.print("]=");
+    LCDline4(); LCDprint("AlN=["); LCDprint(eecharbuf.strunion.alN, 2); LCDprint("]=");
+    tmp = GETFDECNUM(eecharbuf.strunion.alN);
+    TCterminal.println("");
+  } while (tmp < 3. || tmp > 10.);
+  if (inputstrlen != 0) {
+    alN = eecharbuf.strunion.alN = tmp;
+    TCterminal.println("");
+  }
+}
+
 void topEEPROMwrite() {
   if ( tcEEPROM.write(2L, eecharbuf.ebuf, sizeof(EEstruct)) != 0 ) {
     //there was a problem
@@ -1168,12 +1377,16 @@ void topEEPROMwrite() {
 
 void gotoTarget() {
   // Start process of moving motors to Target Right Ascension (TRA) and Declination (TDEC)
-  // Compute Target encoder counts in RA/Azimuth
+  // Compute Target Azimuth/Altitude Encoder count values
+  long targetAzCnt = (TAZIMUTH / 360.) * RRAAZ;
+  long targetAlCnt = (TALTITUDE / 90.) * RDECAL;
+  //*
   if (magOffsetComputed) {
-  TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
+  TcRAAZ = targetAzCnt - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts + eecharbuf.strunion.AZOFFSET;
   } else {
-  TcRAAZ = (TRA * (double)RRAAZ / 360.);
+  TcRAAZ = targetAzCnt + eecharbuf.strunion.AZOFFSET;
   }
+  // */
   RAAZ = RAAZenc.read();
   if (TcRAAZ - RAAZ > 0L) {
     startMotorToTarget(AZIMUTH_MOTOR, CW_DIRECTION, RAAZ, TcRAAZ);
@@ -1181,7 +1394,7 @@ void gotoTarget() {
     startMotorToTarget(AZIMUTH_MOTOR, CCW_DIRECTION, RAAZ, TcRAAZ);
   }
   // Compute Target encoder counts in Declination/Altitude
-  TcDECAL = TDEC * (double)RDECAL / 90.;
+  TcDECAL = targetAlCnt + eecharbuf.strunion.ALOFFSET;
   DECAL = DECALenc.read();
   if (TcDECAL - DECAL > 0L) {
     // Start Altitude Motor CW towards Zenith
@@ -1206,10 +1419,11 @@ void doCommand() {
     TCterminal.println(" 3 IR decode");
     TCterminal.println(" 4 TC Options");
     TCterminal.println(" 5 Display");
+	TCterminal.println(" 6 Motor PID Parameters");
     LCDclear();
     LCDline1(); LCDprint("1 Time  2 Mount");
     LCDline2(); LCDprint("3 IR  4 Options");
-    LCDline3(); LCDprint("5 Display");
+    LCDline3(); LCDprint("5 Display  6 PID");
     num = KEY();
     // Reinit on Backspace
     if (num == '1') RESETIMEFLAG();
@@ -1217,7 +1431,8 @@ void doCommand() {
     if (num == '3') RESETIRFLAG();
     if (num == '4') RESETTCIFLAG();
     if (num == '5') RESETdisplayFLAG();
-    if ((num < '1') || (num > '5')) {
+	if (num == '6') RESETPIDFLAG();
+    if ((num < '1') || (num > '6')) {
       printstatusscreen();
       //LCDclear();
     }
@@ -1345,15 +1560,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > myObjects.NGCNUM);
       if (tmp != 0) {
         myObjects.selectNGCTable(tmp);
-        TRA = myObjects.getRAdec();
-        TDEC = myObjects.getDeclinationDec();
-        COMMAND = FNDOBJECT;
-		if (eecharbuf.strunion.PFLAG) {
-          myAstro.setRAdec(TRA, TDEC);
-          myAstro.doPrecessFrom2000();
-          TRA = myAstro.getRAdec();
-          TDEC = myAstro.getDeclinationDec();
-	    }
+        doPrecessObject();
       }
     }
     if (num1 == '2') {
@@ -1365,9 +1572,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > myObjects.ICNUM);
       if (tmp != 0) {
         myObjects.selectICTable(tmp);
-        TRA = myObjects.getRAdec();
-        TDEC = myObjects.getDeclinationDec();
-        COMMAND = FNDOBJECT;
+        doPrecessObject();
       }
     }
     if (num1 == '3') {
@@ -1379,15 +1584,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > 32000);
       if (tmp != 0) {
         if (myObjects.selectOtherObjectsTable(tmp)) {
-          TRA = myObjects.getRAdec();
-          TDEC = myObjects.getDeclinationDec();
-          COMMAND = FNDOBJECT;
-		  if (eecharbuf.strunion.PFLAG) {
-            myAstro.setRAdec(TRA, TDEC);
-            myAstro.doPrecessFrom2000();
-            TRA = myAstro.getRAdec();
-            TDEC = myAstro.getDeclinationDec();
-	      }
+          doPrecessObject();
         }
       }
     }
@@ -1400,15 +1597,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > 110);
       if (tmp != 0) {
         myObjects.selectMessierTable(tmp);
-        TRA = myObjects.getRAdec();
-        TDEC = myObjects.getDeclinationDec();
-        COMMAND = FNDOBJECT;
-		if (eecharbuf.strunion.PFLAG) {
-          myAstro.setRAdec(TRA, TDEC);
-          myAstro.doPrecessFrom2000();
-          TRA = myAstro.getRAdec();
-          TDEC = myAstro.getDeclinationDec();
-	    }
+        doPrecessObject();
       }
     }
     if (num1 == '5') {
@@ -1420,15 +1609,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > 109);
       if (tmp != 0) {
         myObjects.selectCaldwellTable(tmp);
-        TRA = myObjects.getRAdec();
-        TDEC = myObjects.getDeclinationDec();
-        COMMAND = FNDOBJECT;
-		if (eecharbuf.strunion.PFLAG) {
-          myAstro.setRAdec(TRA, TDEC);
-          myAstro.doPrecessFrom2000();
-          TRA = myAstro.getRAdec();
-          TDEC = myAstro.getDeclinationDec();
-	    }
+        doPrecessObject();
       }
     }
     if (num1 == '6') {
@@ -1440,15 +1621,7 @@ void doCommand() {
       } while (tmp < 0 || tmp > 400);
       if (tmp != 0) {
         myObjects.selectHershel400Table(tmp);
-        TRA = myObjects.getRAdec();
-        TDEC = myObjects.getDeclinationDec();
-        COMMAND = FNDOBJECT;
-		if (eecharbuf.strunion.PFLAG) {
-          myAstro.setRAdec(TRA, TDEC);
-          myAstro.doPrecessFrom2000();
-          TRA = myAstro.getRAdec();
-          TDEC = myAstro.getDeclinationDec();
-	    }
+        doPrecessObject();
       }
     }
     printstatusscreen();
@@ -1461,6 +1634,18 @@ void doCommand() {
     if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
       gotoTarget();
     }
+  }
+}
+
+void doPrecessObject() {
+  TRA = myObjects.getRAdec();
+  TDEC = myObjects.getDeclinationDec();
+  COMMAND = FNDOBJECT;
+  if (eecharbuf.strunion.PFLAG) {
+    myAstro.setRAdec(TRA, TDEC);
+    myAstro.doPrecessFrom2000();
+    TRA = myAstro.getRAdec();
+    TDEC = myAstro.getDeclinationDec();
   }
 }
 
@@ -1487,7 +1672,7 @@ void tcintro() { // Startup screen for user
   TCterminal.println("\nArduino SAMD51 Telescope Controller");
   TCterminal.print("Version ");
   TCterminal.println(tcversion);
-  TCterminal.println("(c) 2022, MIT License");
+  TCterminal.println("(c) 2022-2023, MIT License");
   TERMtextcolor('r');
   TCterminal.println("\nThis software provided as-is without warranty of any kind.");
   TCterminal.println("The User assumes all responsibility for use of this");
@@ -1536,11 +1721,9 @@ void tcintro() { // Startup screen for user
 void TC_main() {
   // This is the second half of the old Forth word TC
   // We do telescope initialization here to allow for re-initialization by user selection
-  //boolean callscreenredraw = false;
   if (NOTIMESETquestion()) {
     RESETIME();
     topEEPROMwrite();
-    //callscreenredraw = true;
   }
   if (NOTINITquestion()) {
     if (MotorDriverflag) {
@@ -1553,7 +1736,6 @@ void TC_main() {
   if (IRquestion()) {
     RESETIR(); // Initialize IR remote key decoding
     topEEPROMwrite();
-    //callscreenredraw = true;
   }
   if (TCIquestion()) {
     RESETTCI(); // Initialize telescope options
@@ -1563,10 +1745,13 @@ void TC_main() {
   if (Displayquestion()) {
     RESETdisplay(); // Initialize display options
     topEEPROMwrite();
-    //callscreenredraw = true;
+  }
+  if (PIDquestion()) {
+    RESETPID(); // Update Motor PID parameters
+    topEEPROMwrite();
   }
   // Main processing loop
-  if (eecharbuf.strunion.SerialTermflag) updatestatusscreen(); // Update Status screen
+  updatestatusscreen(); // Update Serial Status screen, if enabled, and compute current state
   if (eecharbuf.strunion.LCDpicflag || eecharbuf.strunion.LCDi2cflag) updatestatusLCD();
   oledprintData(); //Show it on a quick display, if present
   if (CHKNUM()) {

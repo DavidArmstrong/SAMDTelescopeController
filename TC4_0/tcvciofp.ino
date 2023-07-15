@@ -1,5 +1,5 @@
-/* Telescope Controller 4.00.00 - Variables, Constants, Basic I/O, and Floating Point related routines
-// September 2022
+/* Telescope Controller 4.00.00 - Variables, Constants, and Basic I/O related routines
+// July 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -227,6 +227,15 @@ void RESETdisplayFLAG() {
 boolean Displayquestion() {
   return !displayFLAG;
 }
+void SETPIDFLAG() {
+  PIDFLAG = true;
+}
+void RESETPIDFLAG() {
+  PIDFLAG = false;
+}
+boolean PIDquestion() {
+  return !PIDFLAG;
+}
 void SETERRFLAG() {
   ERRFLAG = true;
 }
@@ -295,7 +304,8 @@ void TERMcursor() {
 void TERMxy(int x, int y) {
   newdelay(20); // Serialx has a small Tx buffer
   // Position cursor on VT100 screen at coordinates x,y
-  ansi.gotoXY(y, x);
+  //ansi.gotoXY(y, x);
+  ansi.gotoXY(x, y); // Change for ANSI 2.0 library
 }
 void TERMtextcolor( char buf ) {
   //Set foreground text color on vt100 terminal screen
@@ -316,6 +326,7 @@ void TERMtextcolor( char buf ) {
 }
 
 void WAITASEC(int n) {
+  if (n < 1) return;
   // Wait until the next second tick
   DateTime now = rtczero.now();
   long initialTime = now.second();
@@ -440,6 +451,7 @@ double getAltitude() {
   return faltitudenow;
 }
 double getAzimuth() {
+  // Return Azimuth degrees
   //TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
   RAAZ = RAAZenc.read();
   double fazimuthnow = 0.;
@@ -476,23 +488,49 @@ boolean getZenithRefSensor() {
   return (digitalRead(ZENITHlim) == LOW);
 }
 
-boolean startMotorToTarget(int motor, int direction, long currentPosition, long targetPosition) {
+boolean startMotorToTarget(int motor, int direction, unsigned long currentPosition, unsigned long targetPosition) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.
   // uses i2cMotorDriver.setDrive( motorNum, direction, level ) to drive the motor
-  int currentSpeed = 0;
-  int currentDir = 0;
-  int speed = 0;
+  int currentSpeed, currentDir, speed;
+  unsigned long previousMillis = 0L;
+  float Kp, Ki, Kd, error[3], N, tau;
+  float d0, d1, fd0, fd1;
+  float maxRange;
   if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
   if ( (direction != CW_DIRECTION) && (direction != CCW_DIRECTION) ) return false;
-  //if ( (speed < 0) || (speed > 255) ) return false;
-  if (motor == ALTITUDE_MOTOR) {
-    currentSpeed = currentAlMtrSpeed;
-    currentDir = currentAlMtrDir;
-  }
+
   if (motor == AZIMUTH_MOTOR) {
     currentSpeed = currentAzMtrSpeed;
     currentDir = currentAzMtrDir;
+	maxRange = RRAAZ;
+	previousMillis = AzPreviousMillis;
+	Kp = azKp;
+	Ki = azKi;
+	Kd = azKd;
+	for (int i = 0; i < 3; i++) error[i] = azError[i];
+	N = azN;
+	tau = azTau;
+	d0 = azD0;
+    d1 = azD1;
+	fd0 = azFd0;
+	fd1 = azFd1;
+  }
+  if (motor == ALTITUDE_MOTOR) {
+    currentSpeed = currentAlMtrSpeed;
+    currentDir = currentAlMtrDir;
+	maxRange = RDECAL;
+	previousMillis = AlPreviousMillis;
+	Kp = alKp;
+	Ki = alKi;
+	Kd = alKd;
+	for (int i = 0; i < 3; i++) error[i] = alError[i];
+	N = alN;
+	tau = alTau;
+	d0 = alD0;
+    d1 = alD1;
+	fd0 = alFd0;
+	fd1 = alFd1;
   }
   if (MotorDriverflag) {
     if (currentDir != direction) {
@@ -503,19 +541,62 @@ boolean startMotorToTarget(int motor, int direction, long currentPosition, long 
       }
       currentSpeed = 0;
     }
-    // TBD - PID here, with target check
+    // PID = See https://en.wikipedia.org/wiki/PID_controller
+	// We do this each time this is called - usually in approx. one second intervals
+	unsigned long currentMillis = millis();
+    float deltaT = (currentMillis - previousMillis) / 1000.;
+
+	// Recommended PID from Wikipedia
+	float A0 = Kp + Ki*deltaT;
+	float A1 = -Kp;
+	float output = currentSpeed / 255.;  // Usually the current value of the actuator
+	float A0d = Kd/deltaT;
+	float A1d = - 2.0*Kd/deltaT;
+	float A2d = Kd/deltaT;
+	float alpha = deltaT / (2.*tau);
+
+	// Loop section that recomputes the output value specifically for this time slot
+    error[2] = error[1];
+    error[1] = error[0];
+    error[0] = ( targetPosition - currentPosition ) / maxRange;
+    // Proportial/Integral part
+    output = output + A0 * error[0] + A1 * error[1];
+    // Filtered Derivative
+    d1 = d0;
+    d0 = A0d * error[0] + A1d * error[1] + A2d * error[2];
+    fd1 = fd0;
+    fd0 = ((alpha) / (alpha + 1)) * (d0 + d1) - ((alpha - 1) / (alpha + 1)) * fd1;
+    output = output + fd0;
+	
+	// Use output value to determine speed to set
+	speed = abs(output * 255.);
+	if (speed > 255) speed = 255;
     i2cMotorDriver.setDrive( motor, direction, speed );
+	
+	if (motor == AZIMUTH_MOTOR) {
+      currentAzMtrSpeed = speed;
+      currentAzMtrDir = direction;
+	  AzPreviousMillis = currentMillis;
+	  for (int i = 0; i < 3; i++) azError[i] = error[i];
+	  azD0 = d0;
+	  azD1 = d1;
+	  azFd0 = fd0;
+	  azFd1 = fd1;
+    }
     if (motor == ALTITUDE_MOTOR) {
       currentAlMtrSpeed = speed;
       currentAlMtrDir = direction;
-    }
-    if (motor == AZIMUTH_MOTOR) {
-      currentAzMtrSpeed = speed;
-      currentAzMtrDir = direction;
+	  AlPreviousMillis = currentMillis;
+	  for (int i = 0; i < 3; i++) alError[i] = error[i];
+	  alD0 = d0;
+	  alD1 = d1;
+	  alFd0 = fd0;
+	  alFd1 = fd1;
     }
   }
   return true;
 }
+
 boolean driveMotor(int motor, int direction, int speed) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.

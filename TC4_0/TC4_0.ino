@@ -1,12 +1,12 @@
-/* Arduino SAMD51-based Telescope Controller 4.00.00 - September 2022
+/* Arduino SAMD51-based Telescope Controller 4.00.00 - July 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // The Sparkfun Micro-Mod system with SAMD51 processor can also be made to work
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 /* To Be Done
-1. PID motor control
-3. Tweaaking Star - allow 3 choices
+1. Fix target computations
+2. Tweaaking Star - allow 3 choices
 3. Better init routines, so sketch doesn't have to be recompiled
 */
 
@@ -43,10 +43,10 @@
 #endif
 
 // Terminal Display Output - Pick one - If at all possible, use Serial2
-//#define TCterminal Serial
+#define TCterminal Serial
 /* Serial2 uses PINS D7-TX, D4-RX for SAMD51
 // This can be set to go to an Xbee module for wireless interaction */
-#define TCterminal Serial2
+//#define TCterminal Serial2
 
 /* LCD output - Serial1 is recommended for either PIC LCD or AVR LCD
 // Although the AVR LCD hardware also has an IIC option
@@ -54,7 +54,7 @@
 #define TC_LCD Serial1
 
 // Comment out if not using old magnetic compass
-#define __HMC6352__
+//#define __HMC6352__
 
 //****** End of User Defined Section ******************************************
 
@@ -62,7 +62,7 @@
 
 void setup() {
   SUPC->VREG.bit.SEL = 1; // Save 4 mA on Metro M4 board
-  RRAAZ = RDECAL = 0L;
+  RRAAZ = RDECAL = 0L; // Assume axis ranges are unknown
   if (AZIMUTH_ENCODER_RANGE != 0L) RRAAZ = AZIMUTH_ENCODER_RANGE;
   if (ALTITUDE_ENCODER_RANGE != 0L) RDECAL = ALTITUDE_ENCODER_RANGE;
   eecharbuf.strunion.DTZONE = DEFAULT_TIME_ZONE;
@@ -74,4 +74,5 @@ void setup() {
 
 void loop() {
   TC_main(); // main processing loop
+  WAITASEC(1);
 }

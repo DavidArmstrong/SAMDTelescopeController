@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Header file
-// September 2022
+// July 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -143,7 +143,7 @@ const int BME280_ADR = 0x77;
 //=========================================
 // EEPROM definitions
 const int MAXUCOORD = 200; // maximum number of User Defined Coordinates
-const int EEcheckByte = 0x59;
+const int EEcheckByte = 0x55;
 struct EEstruct {
   double dummy;
   double FtiltXrockeroff;
@@ -154,6 +154,8 @@ struct EEstruct {
   double FLONGITUDE;
   float DTEMPF; // default Farenheit temperature
   float DTZONE; // Default Time zone offset from GMT
+  float azKp, azKi, azKd, alKp, alKi, alKd; // motor PID scaling values
+  float azN, alN; // motor PID damping intervals
   // IR decode Table - 24 chars match one of 20 long numbers
   long IRinput[32]; // Raw IR remote button numbers
   char IRchar[32]; // Corresponding ASCII char for each number
@@ -163,6 +165,7 @@ struct EEstruct {
   long RDECAL; //Default encoder range for Declination/Altitude
   long AZOFFSET; //Encoder count Offset of Azimuth Reference Sensor from True North
   long ALOFFSET; //Encoder count Offset of Altitude Horizon Sensor from Level with horizon
+  long AzTweakOffsetCounts, AlTweakOffsetCounts; // Count offsets based on last star sync
   int ELEVATION; // default elevation
   int EEchk;
   boolean DSTFLAG; // Set to true if Daylight Savings time is in effect
@@ -282,8 +285,9 @@ double FMAGHDG; // Magnetic Compass heading
 float busvolts, current_mA; // Bus voltage, current as measured by INA219
 float magVariation; // Magnetic Declination or Variation
 long magVariationInAzimuthCounts;
-double AzimuthMagneticEncoderOffset;
+long AzimuthMagneticEncoderOffset;
 boolean magOffsetComputed;
+long AzTweakOffsetCounts, AlTweakOffsetCounts;
 int LCDbrightness;
 
 // need to make auto star select table
@@ -360,6 +364,15 @@ ANSI ansi(&TCterminal); // VT100 support
 boolean AzimuthEncoderInitialized, AltitudeEncoderInitialized;
 int currentAzMtrSpeed, currentAlMtrSpeed;
 int currentAzMtrDir, currentAlMtrDir;
+unsigned long AzPreviousMillis, AlPreviousMillis;
+float azKp, azKi, azKd, alKp, alKi, alKd; // motor PID scaling values
+float azN, alN; // motor PID damping intervals
+float azTau, alTau;
+float azError[3] = { 0., 0., 0. };
+float alError[3] = { 0., 0., 0. };
+float azD0, azD1, azFd0, azFd1;
+float alD0, alD1, alFd0, alFd1;
+boolean PIDFLAG;
 
 #ifndef __FUNCTIONDECLARATIONS__
 //===============================================
@@ -396,6 +409,9 @@ boolean TCIquestion();
 void SETdisplayFLAG();
 void RESETdisplayFLAG();
 boolean Displayquestion();
+void SETPIDFLAG();
+void RESETPIDFLAG();
+boolean PIDquestion();
 void SETERRFLAG();
 void RESETERRFLAG();
 int ACCEPT(char *buf, int limit);
@@ -421,7 +437,7 @@ double getAzimuth(void);
 boolean getAzRefSensor();
 boolean getHorizonRefSensor();
 boolean getZenithRefSensor();
-boolean startMotorToTarget(int motor, int direction, long currentPosition, long targetPosition);
+boolean startMotorToTarget(int motor, int direction, unsigned long currentPosition, unsigned long targetPosition);
 boolean driveMotor(int motor, int direction, int speed);
 boolean driveMotorStop(int motor);
 

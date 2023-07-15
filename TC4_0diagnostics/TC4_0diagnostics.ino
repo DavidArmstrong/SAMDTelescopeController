@@ -274,20 +274,26 @@ void setup() {
   while (!Serial && !Serial2); //Wait for user to open terminal
   newdelay(2000);
   TCterminal.println(" Start with Test of Serial Output.\n");
+  TCterminal.println(" Init I2C.\n");
   Wire.begin(); // I2C init
+  TCterminal.println(" Init Serial1 for LCD.\n");
   Serial1.begin(9600); // serial 4x20 LCD display
 
   // For SAMD51 Serial2
+  TCterminal.println(" Init Serial2 for XeeBee.\n");
   pinPeripheral(4, PIO_SERCOM); // Define Pins for Serial2 UART port
   pinPeripheral(7, PIO_SERCOM);
+  TCterminal.println(" Do Serial2 begin().\n");
   Serial2.begin(9600);
   newdelay(1600); // Give time for Serial2 to init
 
+  TCterminal.println(" Init limits and pushbutton inputs.\n");
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(AZREFsensor, INPUT_PULLUP);
   pinMode(HORIZONlim, INPUT_PULLUP);
   pinMode(ZENITHlim, INPUT_PULLUP);
   pinMode(LOCKBTN, INPUT_PULLUP);
+  newdelay(1600); // Give time to see this.
 
   // Test 0 - Start means required libraries are installed
   // Test 1 - Terminal/LCD outputs
@@ -658,16 +664,16 @@ void setup() {
     TCterminal.print("OLED display Test Start");
     Serial2.print("OLED display Test Start");
     newdelay(500);
-	oled.begin();
+	  oled.begin();
     oled.clear(ALL);
     oled.display();
-	newdelay(500);
+	  newdelay(500);
     oled.clear(PAGE);
-	oled.setFontType(0);
+	  oled.setFontType(0);
     oled.setCursor(0, 0);
-	oled.print("OLED Test ");
-	oled.print("TC 4.00.00");
-	oled.display();
+	  oled.print("OLED Test ");
+	  oled.print("TC 4.00.00");
+	  oled.display();
   }
 
   TCterminal.println( "\n\nTests Completed\n" );

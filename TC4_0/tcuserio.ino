@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - User I/O functions
-// September 2022
+// July 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -534,7 +534,7 @@ void updatestatusscreen() {
     //case 06: myAstro.doSaturn(); break;
     //case 07: myAstro.doUranus(); break;
     //case 0x08: myAstro.doNeptune(); break;
-    case STAYFUNC: myAstro.setRAdec(FRA, FDEC); break;
+    //case STAYFUNC: myAstro.setRAdec(FRA, FDEC); break;
   }
   myAstro.doRAdec2AltAz();
   // Refraction correction
@@ -619,7 +619,7 @@ void updatestatusscreen() {
 	// */
   }
   
-  /* We won't print this normally, to save time and power
+  //* We won't print this normally, to save time and power
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
   if (getRockerTiltPresent()) {
     if (rockerTilt.isConnected()) {
