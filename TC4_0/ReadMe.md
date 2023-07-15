@@ -1,12 +1,13 @@
 # SAMDTelescopeController
 Arduino SAMD51-based Telescope Controller 4.00.00
 
-By David Armstrong, July 2023<br>
-See MIT LICENSE.md file<br>
+#### By David Armstrong, July 2023
+ - See MIT LICENSE.md file
+
 =============================<br>
 
-The system can be used just as Digital Setting circles with no motors. But that means manually
-moving the 'scope around. Of couese, motors can be added later.
+The system may be used just as Digital Setting circles with no motors. But that means manually
+moving the 'scope around. Of course, motors can be added later.
 
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
@@ -26,7 +27,7 @@ libraries installed, and that the relevant hardware interfaces exist and can com
 system. If one get a library error, the code gives a URL for where each
 library can be downloaded.
 
-Them move on to the main sketch in TC4_0.
+Then move on to the main sketch in TC4_0.
 
 For the Metro M4 board with the SAMD51 processor, it is also recommended to select the 'Fastest'
 compile speed option on the Arduino IDE.  This is located at: Tools > Optimize > Fastest, and is
@@ -95,4 +96,3 @@ Astronomical Object Library: https://github.com/DavidArmstrong/SiderealObjects <
 Magnetic Variation: https://github.com/DavidArmstrong/WMM_Tinier <br>
 VT100/ANSI terminal support: https://github.com/RobTillaart/ANSI <br>
 Least Squares Regression Curve Fitting: https://github.com/Rotario/arduinoCurveFitting
-

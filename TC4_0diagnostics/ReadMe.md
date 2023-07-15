@@ -1,23 +1,14 @@
 # SAMDTelescopeController
 Arduino SAMD51-based Telescope Controller 4.00.00 Diagnostics Sketch
 
-By David Armstrong, July 2023<br>
-See MIT LICENSE.md file<br>
+#### By David Armstrong, July 2023
+ - See MIT LICENSE.md file
+ 
 ==================================================================
 
 This Sketch is designed to be used as a precursor sketch to TC4_0, the SAMD51 processor based Telescope Controller 4.00.00 sketch.
 
 The purpose is to help make sure all the needed software libraries are installed, and that the associated required hardware is present and working.
-
-NOTE: In the library file at IRLibProtocols\IRLibSAMD51.h<br>
-You must change lines 18-19 as follows:
-
-'''
-//#define IR_TCn 3
-#define IR_TCn 4
-'''
-
-Otherwise, the application will NOT compile.
 
 If the sketch compiles and loads, you have the needed libraries.  However,
 if you get an error, the code should at least give you a URL to go to
@@ -36,7 +27,7 @@ Note: Any SAMD51 processor Arduino compatible board should work to some degree.
 
 On a Windows computer, you can use the terminal program Tera-Term to access the board via USB.
 You may need to press the Reset button again after programming via the Arduino IDE to see the 
-program start from the beginning.
+program start from the beginning.<br>
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
 At the beginning of the file is a section to allow setting various options and known values.
