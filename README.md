@@ -31,6 +31,6 @@ There are several directories in this project, each containing relevant informat
  
  <object data="Arduino_Telescope_Interface/Telescope_Interface_shield.pdf" type="application/pdf" width="700px" height="700px">
     <embed src="Arduino_Telescope_Interface/Telescope_Interface_shield.pdf">
-        <p>This browser does not support PDFs. Please download the Hardware Schematic PDF to view it: <a href="Arduino_Telescope_Interface/Telescope_Interface_shield.pdf">Hardware Schematic PDF</a>.</p>
+        <p>Please download the Hardware Schematic PDF to view it: <a href="Arduino_Telescope_Interface/Telescope_Interface_shield.pdf">Hardware Schematic PDF</a>.</p>
     </embed>
 </object>
