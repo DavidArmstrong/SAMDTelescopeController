@@ -51,6 +51,7 @@ SCL3300  https://github.com/DavidArmstrong/SCL3300
 Seeed Arduino RTC  https://github.com/Seeed-Studio/Seeed_Arduino_RTC
 Serial Controlled Motor Driver  https://github.com/sparkfun/SparkFun_Serial_Controlled_Motor_Driver_Arduino_Library
 SiderealPlanets  https://github.com/DavidArmstrong/SiderealPlanets
+SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects
 Sparkfun BME280  https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
 Sparkfun Micro OLED Breakout  https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
 Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
@@ -62,7 +63,6 @@ WMM_Tinier  https://github.com/DavidArmstrong/WMM_Tinier
 There are also a few libraries that must be loaded directly from their on-line repositories:
 
 ```
-SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects
 AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer
 HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library
 IRLib2  https://github.com/cyborg5/IRLib2

@@ -22,7 +22,7 @@ such, feel free to clone it and change as your needs dictate.
 
 There are several directories in this project, each containing relevant information and code:
 
- - docs : Nearly all related documentation files for the system. (The Arduino sketches have their own Readme files.) There is a Draw.io based PNG image file showing the basic buiding blocks that make up the system, and how all the parts communicate with each other.
+ - docs : Contains nearly all related documentation files for the system. (The Arduino sketches have their own Readme files.) There is a Draw.io based PNG image file showing the basic buiding blocks that make up the system, and how all the parts communicate with each other.
  - Arduino_Telescope_Interface : Eagle schematic of how to connect various interfaces.  If you have the Eagle PCB software installed, this directory should be copied to be a subdirectory under the EAGLE/projects/ directory.
  - TC4_0diagnostics : Arduino sketch designed to be used as a precursor sketch to TC4_0.  It's purpose is to help make sure all the needed software libraries are installed, and that the associated required hardware is present and working. (Completed)
  - TC4_0 : Arduino SAMD51 processor based Telescope Controller 4.00.00 sketch, that is the Telescope Controller program itself. (Still under development)

@@ -415,7 +415,7 @@ boolean PIDquestion();
 void SETERRFLAG();
 void RESETERRFLAG();
 int ACCEPT(char *buf, int limit);
-boolean RDLBTN(int n);
+boolean RDLBTN();
 void TERMclear();
 void TERMlineup();
 void TERMcursor();

@@ -33,29 +33,28 @@ not all.
 Here is a list of the libraries that the Arduino IDE Library Manager knows about that must be installed:
 
 ```
-Adafruit INA219  https://github.com/adafruit/Adafruit_INA219
-ANSI  https://github.com/RobTillaart/ANSI
-CurveFitting  https://github.com/Rotario/arduinoCurveFitting
-Encoder  https://github.com/PaulStoffregen/Encoder
-extEEPROM  https://github.com/PaoloP74/extEEPROM
-SCL3300  https://github.com/DavidArmstrong/SCL3300
-Seeed Arduino RTC  https://github.com/Seeed-Studio/Seeed_Arduino_RTC
-Serial Controlled Motor Driver  https://github.com/sparkfun/SparkFun_Serial_Controlled_Motor_Driver_Arduino_Library
-SiderealPlanets  https://github.com/DavidArmstrong/SiderealPlanets
-Sparkfun BME280  https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
-Sparkfun Micro OLED Breakout  https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
-Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
-Sparkfun SerLCD Arduino Library  https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library
-Sparkfun u-blox GNSS Arduino Library  https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
+Adafruit INA219  https://github.com/adafruit/Adafruit_INA219 <br>
+ANSI  https://github.com/RobTillaart/ANSI <br>
+CurveFitting  https://github.com/Rotario/arduinoCurveFitting <br>
+Encoder  https://github.com/PaulStoffregen/Encoder <br>
+extEEPROM  https://github.com/PaoloP74/extEEPROM <br>
+SCL3300  https://github.com/DavidArmstrong/SCL3300 <br>
+Seeed Arduino RTC  https://github.com/Seeed-Studio/Seeed_Arduino_RTC <br>
+Serial Controlled Motor Driver  https://github.com/sparkfun/SparkFun_Serial_Controlled_Motor_Driver_Arduino_Library <br>
+SiderealPlanets  https://github.com/DavidArmstrong/SiderealPlanets <br>
+SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects <br>
+Sparkfun BME280  https://github.com/sparkfun/SparkFun_BME280_Arduino_Library <br>
+Sparkfun Micro OLED Breakout  https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library <br>
+Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library <br>
+Sparkfun SerLCD Arduino Library  https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library <br>
+Sparkfun u-blox GNSS Arduino Library  https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library <br>
 WMM_Tinier  https://github.com/DavidArmstrong/WMM_Tinier
 ```
 
 There are also a few libraries that must be loaded directly from their on-line repositories:
 
-```
-SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects
-AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer
-HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library
+AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer <br>
+HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library <br>
 IRLib2  https://github.com/cyborg5/IRLib2
 ```
 
@@ -160,7 +159,7 @@ You choose the drive system.
 Note: The Horizon/Altitude reference may still be good to have for a portable system.  It can be used with the inclinometer to determine the real horizon point, independent of an alignment star.
 
 Now if you have all that, then zero alignment stars are needed to set up the system
-for an observing session.  In fact, it becomes zero alignment, period.  Just turn it on, let it do its setup, and tell it where to go.
+for an observing session.  In fact, it becomes zero alignment, mostly.  Just turn it on, let it do its setup, and tell it where to go. (I state 'mostly' because the controller still uses a tweaking star/planet on initialization to account for errors. But the system will point to that object for you.)
 
 ======================================<br>
 ## Detailed Hardware Information
@@ -190,7 +189,8 @@ https://www.usdigital.com/products/encoders/incremental/rotary/shaft/S2 <br>
 For telescope mounting hardware for encoders, try: http://skyeng.com/ <br>
 They have encoders and connecting cables too.  (or 'roll your own')
 And to connect the encoders cable to the processor board, use an RJ45 jack:<br>
-https://www.sparkfun.com/products/716 and https://www.sparkfun.com/products/643
+https://www.sparkfun.com/products/716 and https://www.sparkfun.com/products/643<br>
+I may also try one of these encoder kits: https://www.astrodevices.com/shop/index.php?product/page/170/Explore+Scientific+Truss+Dobsonian+Encoder+Kit
 
 Various I2C (QWIIC) devices:  https://www.sparkfun.com/qwiic
 

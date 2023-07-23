@@ -905,7 +905,7 @@ void StarTweak() {
   int star1num, star2num, star3num, planetnum;
   int tweaknum[4] = { -1, -1, -1, -1 };
   double star1alt, star2alt, star3alt, planetalt;
-  double tweakalt[3] = { 90.0, 90.0, 90.0, 90.0 };
+  double tweakalt[4] = { 90.0, 90.0, 90.0, 90.0 };
   star1num = star2num = star3num = planetnum = -1;
   star1alt = star2alt = star3alt = planetalt = 90.0;
   double starRA, starDec;
@@ -915,90 +915,104 @@ void StarTweak() {
   // 1. Scan bright star table to get 3 stars closest to 45 degrees altitude
   for (int i=0; i < NISTARS; i++) {
 	  myObjects.selectStarTable(ISTARS[i]);
-      starRA = myObjects.getRAdec();
-      starDec = myObjects.getDeclinationDec();
+    starRA = myObjects.getRAdec();
+    starDec = myObjects.getDeclinationDec();
 	  myAstro.setRAdec(starRA, starDec);
 	  if (eecharbuf.strunion.PFLAG) myAstro.doPrecessFrom2000();
 	  starRA = myAstro.getRAdec();
-      starDec = myAstro.getDeclinationDec();
+    starDec = myAstro.getDeclinationDec();
 	  myAstro.doRAdec2AltAz();
 	  if (fabs(myAstro.getAltitude() - 45.) < tweakalt[0]) {
-		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
-		tweaknum[1] = tweaknum[0]; tweakRA{1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
-		tweaknum[0] = i; tweakRA[0] = starRA; tweakDec[0] = starDec;
-		tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]){
-		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
-		tweaknum[1] = i; tweakRA[1] = starRA; tweakDec[1] = starDec;
-		tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]){
-		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = i; tweakRA[2] = starRA; tweakDec[2] = starDec;
-		tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]){
-		tweaknum[3] = i; tweakRA[3] = starRA; tweakDec[3] = starDec;
-		tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
+		  tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		  tweaknum[2] = tweaknum[1]; tweakRA[2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		  tweaknum[1] = tweaknum[0]; tweakRA[1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
+		  tweaknum[0] = i; tweakRA[0] = starRA; tweakDec[0] = starDec;
+		  tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]) {
+		  tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		  tweaknum[2] = tweaknum[1]; tweakRA[2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		  tweaknum[1] = i; tweakRA[1] = starRA; tweakDec[1] = starDec;
+		  tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]) {
+		  tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		  tweaknum[2] = i; tweakRA[2] = starRA; tweakDec[2] = starDec;
+		  tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
+	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]) {
+		  tweaknum[3] = i; tweakRA[3] = starRA; tweakDec[3] = starDec;
+		  tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
 	  }
-  }
-  // Also check planets: Venus, Mars, Jupiter, Saturn
-  for (int i=2; i < 7; i++) {
-	myObjects.selectStarTable(ISTARS[i]);
-    if (i != 3) {
-	  if (i == 2) myAstro.doVenus();
-	  if (i == 2) myAstro.doMars();
-	  if (i == 2) myAstro.doJupiter();
-	  if (i == 2) myAstro.doSaturn();
-	  starRA = myAstro.getRAdec();
-      starDec = myAstro.getDeclinationDec();
-	  myAstro.doRAdec2AltAz();
-      if (fabs(myAstro.getAltitude() - 45.) < tweakalt[0]) {
-	    tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
-		tweaknum[1] = tweaknum[0]; tweakRA{1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
-		tweaknum[0] = -i; tweakRA[0] = starRA; tweakDec[0] = starDec;
-		tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]){
-		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = tweaknum[1]; tweakRA{2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
-		tweaknum[1] = -i; tweakRA[1] = starRA; tweakDec[1] = starDec;
-		tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]){
-		tweaknum[3] = tweaknum[2]; tweakRA{3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
-		tweaknum[2] = -i; tweakRA[2] = starRA; tweakDec[2] = starDec;
-		tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
-	  } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]){
-		tweaknum[3] = -i; tweakRA[3] = starRA; tweakDec[3] = starDec;
-		tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
-	  }
-	}
   }
 
-  // 2. User selects one (First is default)
-  TCterminal.println("\n Choose a Star or planet to tweak the pointing algorithm.");
+  // Also check planets: Venus, Mars, Jupiter, Saturn
   for (int i=2; i < 7; i++) {
+	  myObjects.selectStarTable(ISTARS[i]);
+    if (i != 3) {
+	    if (i == 2) myAstro.doVenus();
+	    if (i == 4) myAstro.doMars();
+	    if (i == 5) myAstro.doJupiter();
+	    if (i == 6) myAstro.doSaturn();
+	    starRA = myAstro.getRAdec();
+      starDec = myAstro.getDeclinationDec();
+	    myAstro.doRAdec2AltAz();
+      if (fabs(myAstro.getAltitude() - 45.) < tweakalt[0]) {
+	      tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		    tweaknum[2] = tweaknum[1]; tweakRA[2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		    tweaknum[1] = tweaknum[0]; tweakRA[1] = tweakRA[0]; tweakDec[1] = tweakDec[0];
+		    tweaknum[0] = -i; tweakRA[0] = starRA; tweakDec[0] = starDec;
+		    tweakalt[0] = fabs(myAstro.getAltitude() - 45.);
+	    } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[1]) {
+		    tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		    tweaknum[2] = tweaknum[1]; tweakRA[2] = tweakRA[1]; tweakDec[2] = tweakDec[1];
+		    tweaknum[1] = -i; tweakRA[1] = starRA; tweakDec[1] = starDec;
+		    tweakalt[1] = fabs(myAstro.getAltitude() - 45.);
+	    } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[2]) {
+		    tweaknum[3] = tweaknum[2]; tweakRA[3] = tweakRA[2]; tweakDec[3] = tweakDec[2];
+		    tweaknum[2] = -i; tweakRA[2] = starRA; tweakDec[2] = starDec;
+		    tweakalt[2] = fabs(myAstro.getAltitude() - 45.);
+	    } else if (fabs(myAstro.getAltitude() - 45.) < tweakalt[3]) {
+		    tweaknum[3] = -i; tweakRA[3] = starRA; tweakDec[3] = starDec;
+		    tweakalt[3] = fabs(myAstro.getAltitude() - 45.);
+	    }
+    }
+	}
+
+  // 2. User selects one (First is default)
+  TCterminal.println("\n Choose a star/planet to tweak the pointing algorithm.");
+  for (int i=0; i < 4; i++) {
+    TCterminal.print(i);
+    TCterminal.print(". ");
+    if (tweaknum[i] < 0) {
+      PRPLANET(-tweaknum[i]);
+    } else {
+      TCterminal.println(myObjects.printStarName(tweaknum[i]));
+    }
   }
-  TCterminal.print(" 1. ");
-  TCterminal.println(myObjects.printStarName(star1num));
-  TCterminal.print(" 2. ");
-  TCterminal.println(myObjects.printStarName(star1num));
-  TCterminal.print(" 3. ");
-  TCterminal.println(myObjects.printStarName(star1num));
-  TCterminal.print(" 4. ");
-  PRPLANET(planetnum);
-  TCterminal.println("");
+
   do {
-    TCterminal.print(" Object num=["); TCterminal.print(tmp); TCterminal.print("]=");
-    LCDclear(); LCDline1(); LCDprint("AzKp=["); LCDprint(eecharbuf.strunion.azKp, 2); LCDprint("]=");
+    //TCterminal.print(" Object num=["); TCterminal.print(tmp); TCterminal.print("]=");
+    //LCDclear(); LCDline1(); LCDprint("AzKp=["); LCDprint(eecharbuf.strunion.azKp, 2); LCDprint("]=");
     tmp = GETINUM();
     TCterminal.println("");
-  } while (tmp < -120. || tmp > 120.);
+  } while (tmp > 4 || tmp < 1);
   // 3. Aim telescope to target star
+  TRA = tweakRA[tmp];
+  TDEC = tweakDec[tmp];
+  myAstro.setRAdec( TRA, TDEC );
+  myAstro.doRAdec2AltAz();
+  // Refraction correction
+  if (BMEpresent && eecharbuf.strunion.RFLAG) {
+    myAstro.doRefractionF(FPINHG, FTEMPF);
+  }
+  TAZIMUTH = myAstro.getAzimuth();
+  TALTITUDE = myAstro.getAltitude();
+  gotoTarget();
+  //*
   // 4. Request star centered manually
+  
   // 5. Get Azimuth and Altitude encoder counts, and save the diffs as offsets for each axis
   //AzTweakOffsetCounts = ;
   //AlTweakOffsetCounts = ;
+  // */
   return;
 }
 
@@ -1054,7 +1068,7 @@ void INIT() {
     AltitudeEncoderInitialized = true;
   }
   // 7. Check with reference star - done elsewhere
-  //StarTweak();
+  StarTweak();
   
   if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
     if (getRockerTiltPresent()) rockerTilt.powerDownMode();
