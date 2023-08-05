@@ -121,6 +121,68 @@ void LCDclear() { // Clear display and home cursor
     TC_LCD.write('-'); //Send clear display character
   }
 }
+void LCDbrighter() {
+  int tmp = eecharbuf.strunion.LCDbrightness++;
+  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+    // OpenLCD (AVR) based LCD on QWIIC I2C bus
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    Wire.beginTransmission(LCDi2c_ADR);
+    Wire.write('|'); //Put LCD into setting mode
+    Wire.write('+'); //Send RGB display command
+    Wire.write(tmp); //Red
+    Wire.write(0); //Green
+    Wire.write(0); //Blue
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+    // PIC based LCD on TC_LCD TxD line
+    if (tmp < 0x80) tmp = 0x80;
+    if (tmp > 0x9d) tmp = 0x9d;
+    TC_LCD.write(0x7c); // =  decimal
+    TC_LCD.write(tmp);
+  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+    // OpenLCD on TC_LCD TXD line
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    TC_LCD.write('|'); //Send setting character = 124 = 0x7c
+    TC_LCD.write('+'); //Send RGB display character
+    TC_LCD.write(tmp); //Red
+    TC_LCD.write(0); //Green
+    TC_LCD.write(0); //Blue
+  }
+  eecharbuf.strunion.LCDbrightness = tmp;
+}
+void LCDdimmer() {
+  int tmp = eecharbuf.strunion.LCDbrightness--;
+  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+    // OpenLCD (AVR) based LCD on QWIIC I2C bus
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    Wire.beginTransmission(LCDi2c_ADR);
+    Wire.write('|'); //Put LCD into setting mode
+    Wire.write('+'); //Send RGB display command
+    Wire.write(tmp); //Red
+    Wire.write(0); //Green
+    Wire.write(0); //Blue
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+    // PIC based LCD on TC_LCD TxD line
+    if (tmp < 0x80) tmp = 0x80;
+    if (tmp > 0x9d) tmp = 0x9d;
+    TC_LCD.write(0x7c); // =  decimal
+    TC_LCD.write(tmp);
+  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+    // OpenLCD on TC_LCD TXD line
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    TC_LCD.write('|'); //Send setting character = 124 = 0x7c
+    TC_LCD.write('+'); //Send RGB display character
+    TC_LCD.write(tmp); //Red
+    TC_LCD.write(0); //Green
+    TC_LCD.write(0); //Blue
+  }
+  eecharbuf.strunion.LCDbrightness = tmp;
+}
 void LCDprint(int tmp) { // Print to LCD
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     Wire.beginTransmission(LCDi2c_ADR);

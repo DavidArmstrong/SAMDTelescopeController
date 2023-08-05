@@ -143,7 +143,7 @@ const int BME280_ADR = 0x77;
 //=========================================
 // EEPROM definitions
 const int MAXUCOORD = 200; // maximum number of User Defined Coordinates
-const int EEcheckByte = 0x55;
+const int EEcheckByte = 0x54;
 struct EEstruct {
   double dummy;
   double FtiltXrockeroff;
@@ -168,6 +168,7 @@ struct EEstruct {
   long AzTweakOffsetCounts, AlTweakOffsetCounts; // Count offsets based on last star sync
   int ELEVATION; // default elevation
   int EEchk;
+  int LCDbrightness;
   boolean DSTFLAG; // Set to true if Daylight Savings time is in effect
   boolean USELIMITS; //using Limits?
   boolean ERRFLAG; // error variable flag
@@ -386,6 +387,8 @@ void LCDline2();
 void LCDline3();
 void LCDline4();
 void LCDclear();
+void LCDbrighter();
+void LCDdimmer()
 void LCDprint(int tmp);
 void LCDprint(long tmp);
 void LCDprint(double tmp, int frac);

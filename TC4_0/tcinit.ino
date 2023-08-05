@@ -35,6 +35,7 @@ void eepromDefaults() {
   eecharbuf.strunion.OLEDflag = false; // OLED display used?
   eecharbuf.strunion.LCDpicflag = false; // PIC-based LCD on Serial used?
   eecharbuf.strunion.LCDi2cflag = false; // LCD on IIC?
+  eecharbuf.strunion.LCDbrightness = 255; // Full brightness for LCD backlight
   eecharbuf.strunion.INA219flag = false; // INA219 used?
   eecharbuf.strunion.IRSETUPflag = irsetup = false; // IR remote in use
   eecharbuf.strunion.TCIFLAG = TCIFLAG = false; // Telescope Control Interface set up
@@ -978,13 +979,30 @@ void StarTweak() {
 
   // 2. User selects one (First is default)
   TCterminal.println("\n Choose a star/planet to tweak the pointing algorithm.");
+  if (eecharbuf.strunion.LCDpicflag || eecharbuf.strunion.LCDi2cflag) {
+    LCDclear();
+    LCDline1();
+    LCDprint("Pick Tweak Object");
+    WAITASEC(5);
+    LCDclear();
+    LCDline1();
+  }
   for (int i=0; i < 4; i++) {
-    TCterminal.print(i);
+    TCterminal.print(i+1);
+    LCDprint(i+1);
     TCterminal.print(". ");
+    LCDprint(". ");
     if (tweaknum[i] < 0) {
-      PRPLANET(-tweaknum[i]);
+      PRPLANET(-tweaknum[i]); TCterminal.println("");
+      PRPLANETlcd(-tweaknum[i]);
     } else {
       TCterminal.println(myObjects.printStarName(tweaknum[i]));
+      LCDprint(myObjects.printStarName(tweaknum[i]));
+    }
+    if (i < 3) {
+      LCDprint("\n");
+    } else {
+      LCDprint("  ");
     }
   }
 
@@ -994,6 +1012,8 @@ void StarTweak() {
     tmp = GETINUM();
     TCterminal.println("");
   } while (tmp > 4 || tmp < 1);
+  tmp -= 1;
+
   // 3. Aim telescope to target star
   TRA = tweakRA[tmp];
   TDEC = tweakDec[tmp];
@@ -1006,10 +1026,20 @@ void StarTweak() {
   TAZIMUTH = myAstro.getAzimuth();
   TALTITUDE = myAstro.getAltitude();
   gotoTarget();
-  //*
+
   // 4. Request star centered manually
-  
-  // 5. Get Azimuth and Altitude encoder counts, and save the diffs as offsets for each axis
+  TCterminal.println("\n Manually drive motors to center object in eyepiece:");
+  TCterminal.println(" Press Lock button when done.");
+  LCDclear();
+  LCDline1();
+  LCDprint("Center Object:");
+  LCDline1();
+  LCDprint("Hit Lock when Done");
+
+  // 5. Handbox manipulation of pointing
+  gotoTarget();
+
+  // 6. Get Azimuth and Altitude encoder counts, and save the diffs as offsets for each axis
   //AzTweakOffsetCounts = ;
   //AlTweakOffsetCounts = ;
   // */
@@ -1116,6 +1146,7 @@ void RESETIR() {
   // IR remote use setup
   TCterminal.println(" ");
   TCterminal.println(" Need IR keys for: 0-9 - . <cr> <backspc> Right Left Up Down Lock");
+  TCterminal.println(" And IR keys for: LCD Next Screen/Brighter/Dimmer Motors Faster/Slower");
   TCterminal.println(" Enable IR remote?");
   if (GETYORN()) { // Init IR decode array
     TCterminal.println("\n Press each key three times");
@@ -1141,8 +1172,8 @@ void RESETIR() {
     TCterminal.print("\r LCD next Screen"); eecharbuf.strunion.IRinput[19] = initIRkey(eecharbuf.strunion.IRinput[18]); eecharbuf.strunion.IRchar[19] = 'n';
     TCterminal.print("\r LCD Brighter"); eecharbuf.strunion.IRinput[20] = initIRkey(eecharbuf.strunion.IRinput[19]); eecharbuf.strunion.IRchar[20] = '+';
     TCterminal.print("\r LCD Dimmer"); eecharbuf.strunion.IRinput[21] = initIRkey(eecharbuf.strunion.IRinput[20]); eecharbuf.strunion.IRchar[21] = '=';
-    TCterminal.print("\r Motors Faster"); eecharbuf.strunion.IRinput[22] = initIRkey(eecharbuf.strunion.IRinput[21]); eecharbuf.strunion.IRchar[22] = '>';
-    TCterminal.print("\r Motors Slowe"); eecharbuf.strunion.IRinput[23] = initIRkey(eecharbuf.strunion.IRinput[22]); eecharbuf.strunion.IRchar[23] = '<';
+    TCterminal.print("\r Motors Faster"); eecharbuf.strunion.IRinput[22] = initIRkey(eecharbuf.strunion.IRinput[21]); eecharbuf.strunion.IRchar[22] = 'f';
+    TCterminal.print("\r Motors Slowe"); eecharbuf.strunion.IRinput[23] = initIRkey(eecharbuf.strunion.IRinput[22]); eecharbuf.strunion.IRchar[23] = 's';
     eecharbuf.strunion.IRSETUPflag = irsetup = true;
   } else {
     eecharbuf.strunion.IRSETUPflag = irsetup = false;
@@ -1433,7 +1464,7 @@ void doCommand() {
     TCterminal.println(" 3 IR decode");
     TCterminal.println(" 4 TC Options");
     TCterminal.println(" 5 Display");
-	TCterminal.println(" 6 Motor PID Parameters");
+	  TCterminal.println(" 6 Motor PID Parameters");
     LCDclear();
     LCDline1(); LCDprint("1 Time  2 Mount");
     LCDline2(); LCDprint("3 IR  4 Options");
@@ -1492,21 +1523,21 @@ void doCommand() {
       TDEC = (double)Ltmp / 3600.; // Convert Declination to hours
       COMMAND = '9' - '0';
     }
-	double Dtmp = 0.;
-	if (eecharbuf.strunion.PFLAG) {
-      do {
-        LCDclear();  LCDline3(); LCDprint("Epoch=");
-        TCterminal.print(" Epoch (year) = ");
-        Dtmp = GETFDECNUM(); TCterminal.println("");
-      } while (Dtmp < 1600. || Ltmp > (2200.));
-	  myAstro.setGMTdate((long)Dtmp,1,1);
-      myAstro.setRAdec(TRA, TDEC);
-	  myAstro.doPrecessTo2000();
-      myAstro.setGMTdate(GRYEAR, GRMONTH, GRDAY);
-      myAstro.doPrecessFrom2000();
-      TRA = myAstro.getRAdec();
-      TDEC = myAstro.getDeclinationDec();
-	}
+    double Dtmp = 0.;
+    if (eecharbuf.strunion.PFLAG) {
+        do {
+          LCDclear();  LCDline3(); LCDprint("Epoch=");
+          TCterminal.print(" Epoch (year) = ");
+          Dtmp = GETFDECNUM(); TCterminal.println("");
+        } while (Dtmp < 1600. || Ltmp > (2200.));
+      myAstro.setGMTdate((long)Dtmp,1,1);
+        myAstro.setRAdec(TRA, TDEC);
+      myAstro.doPrecessTo2000();
+        myAstro.setGMTdate(GRYEAR, GRMONTH, GRDAY);
+        myAstro.doPrecessFrom2000();
+        TRA = myAstro.getRAdec();
+        TDEC = myAstro.getDeclinationDec();
+    }
     printstatusscreen();
   } else if ( num == '.') {
     // Star
@@ -1648,6 +1679,10 @@ void doCommand() {
     if (MotorDriverflag && eecharbuf.strunion.enableRealHwInit) {
       gotoTarget();
     }
+  } else if (num == '+') {
+    LCDbrighter();
+  } else if (num == '=') {
+    LCDdimmer();
   }
 }
 
@@ -1733,8 +1768,7 @@ void tcintro() { // Startup screen for user
 }
 
 void TC_main() {
-  // This is the second half of the old Forth word TC
-  // We do telescope initialization here to allow for re-initialization by user selection
+  // Do telescope initialization here to allow for re-initialization by user selection
   if (NOTIMESETquestion()) {
     RESETIME();
     topEEPROMwrite();
@@ -1743,7 +1777,6 @@ void TC_main() {
     if (MotorDriverflag) {
       INIT(); // Initialize telescope
       topEEPROMwrite();
-      //callscreenredraw = true;
     }
     SETINITFLAG();
   }
@@ -1754,7 +1787,6 @@ void TC_main() {
   if (TCIquestion()) {
     RESETTCI(); // Initialize telescope options
     topEEPROMwrite();
-    //callscreenredraw = true;
   }
   if (Displayquestion()) {
     RESETdisplay(); // Initialize display options

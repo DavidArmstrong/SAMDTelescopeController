@@ -30,7 +30,8 @@ You may need to press the Reset button again after programming via the Arduino I
 program start from the beginning.<br>
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
-At the beginning of the file is a section to allow setting various options and known values.
+At the beginning of the file is a section to allow setting various options and known values
+at the top of the sketch.
 If any of these are changed, identical changes will need to be made in the TC4_0.ino sketch.
 
 ## Installing the Required Arduino Libraries
