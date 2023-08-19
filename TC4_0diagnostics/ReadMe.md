@@ -1,8 +1,9 @@
 # SAMDTelescopeController
 Arduino SAMD51-based Telescope Controller 4.00.00 Diagnostics Sketch
 
-By David Armstrong, July 2023<br>
-See MIT LICENSE.md file<br>
+#### By David Armstrong, August 2023
+ - See MIT LICENSE.md file
+
 ==================================================================
 
 This Sketch is designed to be used as a precursor sketch to TC4_0,
@@ -44,3 +45,44 @@ https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
 At the beginning of the file is a section to allow setting various options and known values.
 If any of these are changed, identical changes will need to be made in the TC4_0.ino sketch.
+
+## Tests that are Run
+
+0. Sketch Start means required libraries are installed.  A compile fail will occur if a library is missing.  The code includes the URL to use to fetch each library, as a comment, with each statement that references a library.
+
+1. Output to VT-100 compatible terminal application via USB using Serial.
+
+1a. Output to VT-100 compatible terminal application via Xee-Bee using Serial2.
+
+2. Input via either Serial and/or Serial2.
+
+3. Azimuth Encoder check
+
+4. Altitude Encoder check
+
+5. Verify presence of I2C EEPROM
+
+6. u-blox GPS detection
+
+7. Murata SCL3300 Inclinometer Sensors detection.  Detects either/both rocker and tube tilt sensors.
+
+8. Magnetic Compass detection
+
+9. INA219 Voltage/Current sensor detection
+
+10. BME280 Temperature, Pressure,Humidity Sensor detection
+
+11. Azimuth Reference Sensor Detection
+
+12. Horizon Reference Sensor Detection
+
+13. Zenith Reference Sensor Detection
+
+14. Lock/Reinitialize Switch Detection
+
+15. Motor Driver Board detection and Motor tests
+
+16. IR Remote Receiver functionality check
+
+17. OLED display test
+
