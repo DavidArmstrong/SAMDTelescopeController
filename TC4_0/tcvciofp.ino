@@ -123,6 +123,7 @@ void LCDclear() { // Clear display and home cursor
 }
 void LCDbrighter() {
   int tmp = eecharbuf.strunion.LCDbrightness++;
+  int clear = 0x0;
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     if (tmp < 0x0) tmp = 0x0;
@@ -131,8 +132,8 @@ void LCDbrighter() {
     Wire.write('|'); //Put LCD into setting mode
     Wire.write('+'); //Send RGB display command
     Wire.write(tmp); //Red
-    Wire.write(0); //Green
-    Wire.write(0); //Blue
+    Wire.write(clear); //Green
+    Wire.write(clear); //Blue
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
     // PIC based LCD on TC_LCD TxD line
@@ -147,13 +148,14 @@ void LCDbrighter() {
     TC_LCD.write('|'); //Send setting character = 124 = 0x7c
     TC_LCD.write('+'); //Send RGB display character
     TC_LCD.write(tmp); //Red
-    TC_LCD.write(0); //Green
-    TC_LCD.write(0); //Blue
+    TC_LCD.write(clear); //Green
+    TC_LCD.write(clear); //Blue
   }
   eecharbuf.strunion.LCDbrightness = tmp;
 }
 void LCDdimmer() {
   int tmp = eecharbuf.strunion.LCDbrightness--;
+  int clear = 0x0;
   if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     if (tmp < 0x0) tmp = 0x0;
@@ -162,8 +164,8 @@ void LCDdimmer() {
     Wire.write('|'); //Put LCD into setting mode
     Wire.write('+'); //Send RGB display command
     Wire.write(tmp); //Red
-    Wire.write(0); //Green
-    Wire.write(0); //Blue
+    Wire.write(clear); //Green
+    Wire.write(clear); //Blue
     Wire.endTransmission();
   } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
     // PIC based LCD on TC_LCD TxD line
@@ -178,8 +180,8 @@ void LCDdimmer() {
     TC_LCD.write('|'); //Send setting character = 124 = 0x7c
     TC_LCD.write('+'); //Send RGB display character
     TC_LCD.write(tmp); //Red
-    TC_LCD.write(0); //Green
-    TC_LCD.write(0); //Blue
+    TC_LCD.write(clear); //Green
+    TC_LCD.write(clear); //Blue
   }
   eecharbuf.strunion.LCDbrightness = tmp;
 }

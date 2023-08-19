@@ -169,6 +169,7 @@ struct EEstruct {
   int ELEVATION; // default elevation
   int EEchk;
   int LCDbrightness;
+  int HbxSpeed;
   boolean DSTFLAG; // Set to true if Daylight Savings time is in effect
   boolean USELIMITS; //using Limits?
   boolean ERRFLAG; // error variable flag
@@ -388,7 +389,7 @@ void LCDline3();
 void LCDline4();
 void LCDclear();
 void LCDbrighter();
-void LCDdimmer()
+void LCDdimmer();
 void LCDprint(int tmp);
 void LCDprint(long tmp);
 void LCDprint(double tmp, int frac);
