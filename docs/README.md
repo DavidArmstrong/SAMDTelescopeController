@@ -2,12 +2,12 @@
 
 ## Arduino SAMD51-based Telescope Controller 4.00.00
 
-#### By David Armstrong, July 2023
+#### By David Armstrong, August 2023
  - See MIT LICENSE file
 
 ========================================================================
 
-This repository implements one of many possible design scenarios for a Telescope Controller, 
+This repository implements a SAMD51 processor based Telescope Controller, 
 using the Arduino IDE as a development environment.
 
 ## Installing the Telescope Controller Application
@@ -18,7 +18,7 @@ The files in the "Arduino Telescope Interface" directory contain an Eagle schema
 connect various interfaces.  If you have the Eagle PCB software installed, this directory 
 should be copied to be a subdirectory under the EAGLE/projects/ directory.
 
-There is also a drawio based diagram showing at a high level how all the parts communicate 
+There is also a draw.io based diagram showing at a high level how all the parts communicate 
 with each other. This includes both the draw.io diagram source, and a 
 'TelescopeController4_0.drawio.png' image file created by draw.io.
 
@@ -32,7 +32,7 @@ not all.
 
 Here is a list of the libraries that the Arduino IDE Library Manager knows about that must be installed:
 
-```
+
 Adafruit INA219  https://github.com/adafruit/Adafruit_INA219 <br>
 ANSI  https://github.com/RobTillaart/ANSI <br>
 CurveFitting  https://github.com/Rotario/arduinoCurveFitting <br>
@@ -49,16 +49,16 @@ Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/Spa
 Sparkfun SerLCD Arduino Library  https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library <br>
 Sparkfun u-blox GNSS Arduino Library  https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library <br>
 WMM_Tinier  https://github.com/DavidArmstrong/WMM_Tinier
-```
+
 
 There are also a few libraries that must be loaded directly from their on-line repositories:
 
 AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer <br>
 HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library <br>
 IRLib2  https://github.com/cyborg5/IRLib2
-```
 
-NOTE: That last library, 'IRLib2', has one file that *MUST* have two lines modified so that
+
+NOTE: That last library, 'IRLib2', has one file that MUST have two lines modified so that
 the sketch will compile successfully. In the library file at IRLibProtocols\IRLibSAMD51.h<br>
 You must change lines 18-19 as follows:
 
@@ -67,13 +67,13 @@ You must change lines 18-19 as follows:
 #define IR_TCn 4
 ```
 
-Otherwise, the application will NOT compile.
+Otherwise, if this is not done the application will NOT compile.
 
 ## Initial Testing
 
 Use the TC4_0diagnostics.ino sketch to test the installed libraries and hardware interfaces
 before going to the TC4_0.ino sketch.  This test sketch goes through each piece of hardware,
-taking one at a time, to make sure each can be reached and responds as expected when it is
+ one at a time, to make sure each can be reached and responds as expected when it is
 initialized.
 
 Note that while two different Magnetic Compass Libraries are loaded, only one will actually
@@ -94,8 +94,8 @@ start in demo mode.  (Pins SDA, SCL; IIC address 0x50)
 to force a clean re-initialization of the system should things just get into a bad state.
 (i.e. Like bad values saved into the EEPROM listed in #1 above.) (Pin 19 = A5)
 
-2. Two Quadrature Optical Encoders (required) - And you need mounting hardware for those 
-encoders.  This will allow using the program as Digital Setting Circles on your 
+2. Two Quadrature Optical Encoders (required) - You will need mounting hardware for those 
+encoders.  This will allow using the program, at a minimum, as Digital Setting Circles on your 
 telescope.  (Pins A1,A2 for azimuth and A3,A4 for altitude)
 
 3. Level shifter (required) - Needed to translate the 5 volt signals from the encoders to
@@ -113,15 +113,15 @@ can spend, in both time and money.
 
 Consider these options:
 
-5. Add in Xbee modules to go wireless.
+5. Xbee modules to go wireless.
 Screen output can be sent to Serial2 in the code, which will send UART
 data to D4(Rx)/D7(Tx) for the SAMD51.  Using Serial2 
-may faster than relying on the Serial port, which is the default.  
+may be faster than relying on the Serial port, which is the default.  
 The option is enabled at the top of file TC4_0.ino.  The other end of the XBee connection should have a VT100 compatible terminal emulator program.  (I use Tera-Term for Windows 10.)
 
-6. Remove requirement for a laptop with:
-  A. 4x20 character LCD display (Pin D1 - Serial TX is recommended) OR use I2C bus
-  B. IR detector (Pin 11 = D11)
+6. Remove requirement for a laptop with:<br>
+  A. 4x20 character LCD display (Pin D1 - Serial TX is recommended) OR use I2C bus<br>
+  B. IR detector (Pin 11 = D11)<br>
   C. TV/DVD IR remote with backlit kaypad - Instant wireless handbox control
 
 7. Refraction correction:
@@ -137,7 +137,7 @@ OR (MMC5983MA IIC address 0x30 - recommended)
 (Portable systems can benefit from this option.  Permanently mounted telescopes should be
 mounted properly anyway, which makes this unnecessary.  See #13 below.)
 Murata SCL3300 SPI inclinometer - for an Alt-Azimuth base for level determination
-(pins 22,23,24 on ICSP header, and Chip Select Pin 10 )
+(pins 22,23,24 on ICSP header, and Chip Select Pin 10 )<br>
 Note: Add a second SCL3300, mounted on the telescope tube, for Altitude orientation determination.
 ( Chip Select Pin 9 )
 
@@ -165,16 +165,16 @@ for an observing session.  In fact, it becomes zero alignment, mostly.  Just tur
 ## Detailed Hardware Information
 
 For this system, the hardware listed below is assumed as being used.  Some substitutions
-are possible, but the code might have to be changed accordingly. Do your homework.
+are possible, but the code might have to be changed accordingly. You will have to do your homework.
 
 Sparkfun Mini Pushbutton switch: https://www.sparkfun.com/products/97 <br>
 Hint: Consider getting a Protoshield Kit to mount these parts. It even comes with a pushbutton:  https://www.sparkfun.com/products/13820
 
 Sparkfun Buck-Boost Converter (recommended, because one needs both 5 and 11 volt supplies): <br>
 https://www.sparkfun.com/products/15208 <br>
-Note: I use a second Converter to provide a higher voltage to the Motor Controller Board to power the motors.
+Note: I use an additional Converter to provide a higher voltage to the Motor Controller Board to power the motors.
 
-In addition, an extra 3.3 volt power source is *required* since there are a maximum number of QWIIC devices being used:<br>
+In addition, an extra 3.3 volt power source is required since there are a maximum number of QWIIC devices being used:<br>
 (If that extra 3.3 volt supply isn't installed, the sketch is guaranteed to hang.  Or the I2C interface on the SAMD processor will burn out.  Both effects are known from experience.)<br>
 https://www.sparkfun.com/products/18356 <br>
 https://www.sparkfun.com/products/14495 <br>
@@ -225,7 +225,7 @@ https://www.digikey.com/product-detail/en/murata-electronics-north-america/SCL33
 Note: Without it, one is left with having to manually determine level the of the telescope every single time it's set up.
 
 ====================================<br>
-## Supporing Documentation
+## Supporting Documentation
 
 EEPROM hookup guide: https://learn.sparkfun.com/tutorials/reading-and-writing-serial-eeproms <br>
 Serial Enabled LCD hookup guide: https://learn.sparkfun.com/tutorials/pic-based-serial-enabled-character-lcd-hookup-guide
@@ -260,14 +260,14 @@ libraries that were tested, extensive, and readily available.  Software tool ava
 often ends up determining what hardware will be used for a system.
 
 As the software got closer to completion, it became evident that the SAMD21 memory space
-was going to reach its' limit.  CPU usage was getting higher as well.  The decision was made
+was going to reach its limit.  CPU usage was getting higher as well.  The decision was made
 to migrate to the SAMD51, which had twice the flash space, and nearly three times the 
 raw speed. Hence the use of the Adafruit Metro M4 board. And I could still use the same
 Arduino form factor protoboards I constructed that plug into the headers on those boards.
 
 You will notice some use of 'caps' in the current source.  That's because the
 Arduino code is a translation of the original FIG-Forth code, which had a 
-proven record in the field, literally.  However, that code was written in a
+proven record in the field, literally.  However, that Forth code was written in a
 previous millenium.  Such ancient coding is considered painful to look at by
 today's standards.  You are welcome to rewrite it, but I don't have the time.
 There was enough rewriting done for the new system.

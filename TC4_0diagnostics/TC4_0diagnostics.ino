@@ -653,7 +653,7 @@ void setup() {
   } while (!(TCterminal.available() || Serial2.available()));
   KEY();
 
-  // Test 17 - OLED test - Optional
+  // Test 17 - OLED display test - Optional
   boolean OledDetected = false;
   TCterminal.println("\nWARNING: Checking for a non-existant OLED display may hang the system!");
   Serial2.println("\nWARNING: Checking for a non-existant OLED display may hang the system!");
