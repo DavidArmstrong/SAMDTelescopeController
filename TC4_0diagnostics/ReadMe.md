@@ -16,10 +16,10 @@ working.
 NOTE: In the library file at IRLibProtocols\IRLibSAMD51.h<br>
 You must change lines 18-19 as follows:
 
-'''
+```
 //#define IR_TCn 3
 #define IR_TCn 4
-'''
+```
 
 Otherwise, the application will NOT compile.
 
