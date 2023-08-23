@@ -26,7 +26,7 @@
 //#define REVERSE_ALTITUDE_MOTOR_DIRECTION
 
 // Comment out if not using old magnetic compass
-#define __HMC6352__
+//#define __HMC6352__
 
 //****** End of User Defined Section ******************************************
 
@@ -468,8 +468,8 @@ void setup() {
   Serial2.println("Should this check be done? (y/n)");
   int x = KEY();
   if ( x == 'y' ) {
-    TCterminal.print("Adafruit INA219 Voltage/Current monitor ");
-    Serial2.print("Adafruit INA219 Voltage/Current monitor ");
+    TCterminal.print(" INA219 Voltage/Current monitor ");
+    Serial2.print(" INA219 Voltage/Current monitor ");
     newdelay(500);
     if (!ina219.begin()) {
       TCterminal.print("not ");

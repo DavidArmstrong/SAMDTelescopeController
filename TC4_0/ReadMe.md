@@ -9,7 +9,7 @@ Arduino SAMD51-based Telescope Controller 4.00.00
 The system may be used just as Digital Setting circles with no motors. But that means manually
 moving the 'scope around. Of course, motors can be added later.
 
-Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
+DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
 
 This application requires a SAMD51 based processor.  Suggestions:<br>
@@ -19,10 +19,10 @@ Option 2: Sparkfun Micro-Mod system with SAMD51 processor<br>
 https://www.sparkfun.com/products/16791 <br>
 https://www.sparkfun.com/products/16885 
 
-Note: Any SAMD51 processor Arduino compatible board should work to some degree.
+Any SAMD51 processor Arduino compatible board should work to some degree.
 
 Start by loading the sketch under TC4_0diagnostics, and get that to work first.
-That has its' own Readme file.  Its' purpose is to prove that you have all the needed
+That has its own Readme file.  Its purpose is to prove that you have all the needed
 libraries installed, and that the relevant hardware interfaces exist and can communicate with the
 system. If one get a library error, the code gives a URL for where each
 library can be downloaded.
@@ -40,8 +40,10 @@ You may also be required to modify the default values defined at the top of the 
 based on the hardware setup of your telescope system.
 
 On a Windows computer, one can use the terminal program Tera-Term to access the board via USB.
+However, any VT-100 compatible terminal program should work with the sketch.
+Do not use the default Arduino IDE Serial output window here.
 The Reset button may need to be pressed again after programming via the Arduino IDE to see the 
-program start from the beginning.
+program output from the beginning.
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
 ==========================<br>
