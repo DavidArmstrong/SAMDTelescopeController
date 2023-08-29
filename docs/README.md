@@ -10,6 +10,7 @@
 This repository implements a SAMD51 processor based Telescope Controller, 
 using the Arduino IDE as a development environment.
 
+
 ## Installing the Telescope Controller Application
 
 Download this repository, and place the contained sub-directories as instructed here:
@@ -23,6 +24,7 @@ with each other. This includes both the draw.io diagram source, and a
 'TelescopeController4_0.drawio.png' image file created by draw.io.
 
 Both the TC4_0/ and TC4_0diagnostics/ directories are Arduino sketches, and should be copied to the Arduino/ directory, where Arduino IDE sketch projects are stored.
+
 
 ## Installing the Required Arduino Libraries
 
@@ -69,15 +71,21 @@ You must change lines 18-19 as follows:
 
 Otherwise, if this is not done the application will NOT compile.
 
+
 ## Initial Testing
 
-Use the TC4_0diagnostics.ino sketch to test the installed libraries and hardware interfaces
-before going to the TC4_0.ino sketch.  This test sketch goes through each piece of hardware,
- one at a time, to make sure each can be reached and responds as expected when it is
-initialized.
+First use the TC4_0diagnostics.ino sketch to test the installed libraries and hardware interfaces
+before going to the TC4_0.ino sketch.  The test sketch goes through each piece of hardware, 
+one at a time, to make sure each can be reached and responds as expected when it is
+initialized.  Please refer to the Readme file that is with that sketch for specific 
+instructions on how to set up and run the application.
 
 Note that while two different Magnetic Compass Libraries are loaded, only one will actually
 be used by the application. It depends on which one is physically present.
+
+After the TC4_0diagnostics.ino sketch tests pass, you can move on to compiling and using
+the TC4_0.ino application, located in the TC4_0 folder.
+
 
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
@@ -224,6 +232,7 @@ SPI Murata SCL3300-D01-1 inclinometer: https://www.mouser.com/ProductDetail/Mura
 https://www.digikey.com/product-detail/en/murata-electronics-north-america/SCL3300-D01-10/490-18218-1-ND/9950619 <br>
 Note: Without it, one is left with having to manually determine level the of the telescope every single time it's set up.
 
+
 ====================================<br>
 ## Supporting Documentation
 
@@ -232,6 +241,7 @@ Serial Enabled LCD hookup guide: https://learn.sparkfun.com/tutorials/pic-based-
 --> http://playground.arduino.cc/Code/SerLCD <br>
 QWIIC Serial Enabled LCD hookup guide: https://learn.sparkfun.com/tutorials/avr-based-serial-enabled-lcds-hookup-guide <br>
 --> The SparkFun SerLCD Arduino library can be downloaded with the Arduino library manager by searching 'SparkFun SerLCD'
+
 
 ====================================<br>
 ## History:  (Why is this Version 4?)
@@ -318,4 +328,3 @@ D. (Ed.)
 13. Celestial Objects Online Database: http://www.astronexus.com/hyg and https://github.com/astronexus/HYG-Database
 
 14. List of Bright Stars. https://en.wikipedia.org/wiki/List_of_brightest_stars
-

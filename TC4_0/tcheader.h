@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Header file
-// July 2023
+// August 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -177,9 +177,9 @@ struct EEstruct {
   boolean RFLAG;  // True if Refraction calculations enabled
   boolean MotorDriverflag;
   boolean OLEDflag; // OLED display used?
-  boolean LCDpicflag; // PIC-based LCD display used?
-  boolean LCDi2cflag; // OpenLCD I2C display used?
-  //Note: if both LCDpicflag and LCDi2cflag are true, then an OpenLCD device is on TC_LCD
+  boolean LCDserialflag; // PIC-based LCD display used?
+  boolean LCDavrflag; // OpenLCD I2C display used?
+  //Note: if both LCDserialflag and LCDavrflag are true, then an OpenLCD device is on TC_LCD
   boolean IRSETUPflag; // Set if IR remote has been set up
   boolean TCIFLAG; // Set if Telescope Control interface is configured
   boolean INA219flag; // INA219 I2C voltage monior used?

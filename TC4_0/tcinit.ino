@@ -33,8 +33,8 @@ void eepromDefaults() {
   eecharbuf.strunion.MotorDriverflag = false; // Motor driver flag
   eecharbuf.strunion.SerialTermflag = true; // Serial port Terminal display
   eecharbuf.strunion.OLEDflag = false; // OLED display used?
-  eecharbuf.strunion.LCDpicflag = false; // PIC-based LCD on Serial used?
-  eecharbuf.strunion.LCDi2cflag = false; // LCD on IIC?
+  eecharbuf.strunion.LCDserialflag = false; // PIC-based or AVR-based LCD on Serial used?
+  eecharbuf.strunion.LCDavrflag = false; // AVR LCD on IIC?
   eecharbuf.strunion.LCDbrightness = 255; // Full brightness for LCD backlight
   eecharbuf.strunion.INA219flag = false; // INA219 used?
   eecharbuf.strunion.IRSETUPflag = irsetup = false; // IR remote in use
@@ -629,7 +629,7 @@ void inithardware() { //Set up all the hardware interfaces
     eecharbuf.strunion.RDECAL = RDECAL;
   }
 
-  if (eecharbuf.strunion.LCDi2cflag || eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag || eecharbuf.strunion.LCDserialflag) {
     LCDclear(); // Only clear if we are using LCD display
     newdelay(500);
     LCDline1();
@@ -979,7 +979,7 @@ void StarTweak() {
 
   // 2. User selects one (First is default)
   TCterminal.println("\n Choose a star/planet to tweak the pointing algorithm.");
-  if (eecharbuf.strunion.LCDpicflag || eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDserialflag || eecharbuf.strunion.LCDavrflag) {
     LCDclear();
     LCDline1();
     LCDprint("Pick Tweak Object");
@@ -1273,17 +1273,17 @@ void RESETdisplay() {
   do {
     TCterminal.println("\n Select Option to Enable/Disable");
     TCterminal.print(" 1) OLED Display: ");    OptionStateMsg(eecharbuf.strunion.OLEDflag);
-    TCterminal.print(" 2) PIC LCD Display: ");    OptionStateMsg(eecharbuf.strunion.LCDpicflag);
-    TCterminal.print(" 3) I2C LCD Display: ");    OptionStateMsg(eecharbuf.strunion.LCDi2cflag);
+    TCterminal.print(" 2) Serial LCD Display: ");    OptionStateMsg(eecharbuf.strunion.LCDserialflag);
+    TCterminal.print(" 3) AVR LCD Display: ");    OptionStateMsg(eecharbuf.strunion.LCDavrflag);
     TCterminal.print(" 4) Serial Terminal Display: ");    OptionStateMsg(eecharbuf.strunion.SerialTermflag);
     TCterminal.println(" 0) Done - Return to Main Display");
     LCDclear();
     LCDline1(); LCDprint("0 Done 1 OLED:"); LCDOptionStateMsg(eecharbuf.strunion.OLEDflag);
-    LCDline2(); LCDprint("2 PIC LCD:"); LCDOptionStateMsg(eecharbuf.strunion.LCDpicflag);
-    if (eecharbuf.strunion.LCDpicflag) {
+    LCDline2(); LCDprint("2 Serial LCD:"); LCDOptionStateMsg(eecharbuf.strunion.LCDserialflag);
+    if (eecharbuf.strunion.LCDserialflag) {
       LCDprint(" +-");
     }
-    LCDline3(); LCDprint("3 I2C LCD:"); LCDOptionStateMsg(eecharbuf.strunion.LCDi2cflag);
+    LCDline3(); LCDprint("3 AVR LCD:"); LCDOptionStateMsg(eecharbuf.strunion.LCDavrflag);
     
     LCDline4(); LCDprint("4 Serial:"); LCDOptionStateMsg(eecharbuf.strunion.SerialTermflag);
     choice = KEY();
@@ -1297,15 +1297,15 @@ void RESETdisplay() {
         oled.clear(PAGE);
       }
     }
-    if (choice == '2') eecharbuf.strunion.LCDpicflag = !(eecharbuf.strunion.LCDpicflag);
-    if (choice == '3') eecharbuf.strunion.LCDi2cflag = !(eecharbuf.strunion.LCDi2cflag);
-    if ((choice == '-') && eecharbuf.strunion.LCDpicflag) {
+    if (choice == '2') eecharbuf.strunion.LCDserialflag = !(eecharbuf.strunion.LCDserialflag);
+    if (choice == '3') eecharbuf.strunion.LCDavrflag = !(eecharbuf.strunion.LCDavrflag);
+    if ((choice == '-') && eecharbuf.strunion.LCDserialflag) {
       LCDbrightness--;
       if (LCDbrightness < 0x80) LCDbrightness = 0x80;
       TC_LCD.write(0x7C); //Send command character
       TC_LCD.write(LCDbrightness);
       newdelay(500);
-    } else if ((choice == '+') && eecharbuf.strunion.LCDpicflag) {
+    } else if ((choice == '+') && eecharbuf.strunion.LCDserialflag) {
       LCDbrightness++;
       if (LCDbrightness > 0x9D) LCDbrightness = 0x9D;
       TC_LCD.write(0x7C); //Send command character
@@ -1315,7 +1315,7 @@ void RESETdisplay() {
     if (choice == '4') {
       eecharbuf.strunion.SerialTermflag = !(eecharbuf.strunion.SerialTermflag);
     }
-  } while ((choice != '0') || !(eecharbuf.strunion.SerialTermflag || eecharbuf.strunion.LCDpicflag || eecharbuf.strunion.LCDi2cflag));
+  } while ((choice != '0') || !(eecharbuf.strunion.SerialTermflag || eecharbuf.strunion.LCDserialflag || eecharbuf.strunion.LCDavrflag));
   SETdisplayFLAG();
 }
 
@@ -1798,7 +1798,7 @@ void TC_main() {
   }
   // Main processing loop
   updatestatusscreen(); // Update Serial Status screen, if enabled, and compute current state
-  if (eecharbuf.strunion.LCDpicflag || eecharbuf.strunion.LCDi2cflag) updatestatusLCD();
+  if (eecharbuf.strunion.LCDserialflag || eecharbuf.strunion.LCDavrflag) updatestatusLCD();
   oledprintData(); //Show it on a quick display, if present
   if (CHKNUM()) {
     doCommand();

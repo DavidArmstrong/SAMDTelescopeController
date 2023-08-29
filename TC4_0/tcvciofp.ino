@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Variables, Constants, and Basic I/O related routines
-// July 2023
+// August 2023
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -61,61 +61,61 @@ long GETnum(char* buf) { //convert string to long number
 }
 
 void LCDline1() { // move cursor to beginning of first line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128); //Change the position (128) of the cursor to 1st row (0), position 0
   }
 }
 void LCDline2() { // move cursor to beginning of second line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 64); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 64); //Change the position (128) of the cursor to 2nd row (64), position 0
   }
 }
 void LCDline3() { // move cursor to beginning of third line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 20); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 20); //Change the position (128) of the cursor to 3rd row (20), position 0
   }
 }
 void LCDline4() { // move cursor to beginning of fourth line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 84); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 84); //Change the position (128) of the cursor to 4th row (84), position 0 (0)
   }
 }
 void LCDclear() { // Clear display and home cursor
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write('|'); //Put LCD into setting mode
     Wire.write('-'); //Send clear display command
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
     // PIC based LCD on TC_LCD TxD line
     TC_LCD.write(0xfe); // = 254 decimal
     TC_LCD.write(0x01);
-  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
     // OpenLCD on TC_LCD TXD line
     TC_LCD.write('|'); //Send setting character = 124 = 0x7c
     TC_LCD.write('-'); //Send clear display character
@@ -124,7 +124,7 @@ void LCDclear() { // Clear display and home cursor
 void LCDbrighter() {
   int tmp = eecharbuf.strunion.LCDbrightness++;
   int clear = 0x0;
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     if (tmp < 0x0) tmp = 0x0;
     if (tmp > 0xff) tmp = 0xff;
@@ -135,13 +135,13 @@ void LCDbrighter() {
     Wire.write(clear); //Green
     Wire.write(clear); //Blue
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
     // PIC based LCD on TC_LCD TxD line
     if (tmp < 0x80) tmp = 0x80;
     if (tmp > 0x9d) tmp = 0x9d;
     TC_LCD.write(0x7c); // =  decimal
     TC_LCD.write(tmp);
-  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
     // OpenLCD on TC_LCD TXD line
     if (tmp < 0x0) tmp = 0x0;
     if (tmp > 0xff) tmp = 0xff;
@@ -156,7 +156,7 @@ void LCDbrighter() {
 void LCDdimmer() {
   int tmp = eecharbuf.strunion.LCDbrightness--;
   int clear = 0x0;
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     if (tmp < 0x0) tmp = 0x0;
     if (tmp > 0xff) tmp = 0xff;
@@ -167,13 +167,13 @@ void LCDdimmer() {
     Wire.write(clear); //Green
     Wire.write(clear); //Blue
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
     // PIC based LCD on TC_LCD TxD line
     if (tmp < 0x80) tmp = 0x80;
     if (tmp > 0x9d) tmp = 0x9d;
     TC_LCD.write(0x7c); // =  decimal
     TC_LCD.write(tmp);
-  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
     // OpenLCD on TC_LCD TXD line
     if (tmp < 0x0) tmp = 0x0;
     if (tmp > 0xff) tmp = 0xff;
@@ -186,56 +186,56 @@ void LCDdimmer() {
   eecharbuf.strunion.LCDbrightness = tmp;
 }
 void LCDprint(int tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(long tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(double tmp, int frac) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp, 2);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp, frac);
   }
 }
 void LCDprint(char tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(char* tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(const char* tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }

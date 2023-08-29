@@ -91,14 +91,14 @@ void print2digitsUSB(int number) {
 }
 
 void print2digitsLCD(int number) {
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     if (number < 10) {
       Wire.print("0");
     }
     Wire.print(number);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     if (number < 10) {
       TC_LCD.print("0");
     }

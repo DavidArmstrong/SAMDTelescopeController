@@ -27,6 +27,11 @@ There are several directories in this project, each containing relevant informat
  - TC4_0diagnostics : Arduino sketch designed to be used as a precursor sketch to TC4_0.  It's purpose is to help make sure all the needed software libraries are installed, and that the associated required hardware is present and working. (Completed)
  - TC4_0 : Arduino SAMD51 processor based Telescope Controller 4.00.00 sketch, that is the Telescope Controller program itself. (Still under development)
  
+ Most of these have their own Readme file, and should be referenced in the order listed above, as each has
+ information relevant to documents that follow them in the list.
+ 
+ Here is a diagram of how the various hardware components relate to each other:
+ 
  ![image](./docs/TelescopeController4_0.drawio.png)
  
  <object data="Arduino_Telescope_Interface/Telescope_Interface_shield.pdf" type="application/pdf" width="700px" height="700px">

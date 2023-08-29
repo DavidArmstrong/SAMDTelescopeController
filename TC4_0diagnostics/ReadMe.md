@@ -22,6 +22,17 @@ https://www.sparkfun.com/products/16885
 
 Any SAMD51 processor Arduino compatible board should work to some degree.
 
+For the Metro M4, you MUST set up the Arduino IDE precisely as listed on the Adafruit guide 
+for that board:<br>
+https://learn.adafruit.com/adafruit-metro-m4-express-featuring-atsamd51
+
+For the Metro M4 board with the SAMD51 processor, it is also recommended to select the 'Fastest'
+compile speed option on the Arduino IDE.  This is located at: Tools > Optimize > Fastest, and is
+available only after selecting the Metro M4 as the target board.  This 
+doesn't make the compile time shorter, but it does make the sketch run faster on the processor.
+We do this on the SAMD51 because there is not a memory constraint on that system. (We swap 
+some memory space for speed of execution increases.)
+
 
 ## Tailoring the Sketch For Your System
 
@@ -66,9 +77,10 @@ On a Windows computer, you can use the terminal program Tera-Term to access the 
 However, any VT-100 compatible terminal program should work with the sketch.
 The default Arduino IDE Serial output window can also be pressed into service here.
 
-You may need to press the Reset button again after programming via the Arduino IDE to see the 
+You may need to press the Reset button after programming via the Arduino IDE to see the 
 program output from the start of the sketch.
 
+Reference: 
 https://learn.sparkfun.com/tutorials/terminal-basics/tera-term-windows
 
 
