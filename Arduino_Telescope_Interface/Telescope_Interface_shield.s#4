@@ -65,6 +65,7 @@
 <layer number="54" name="bGND_GNDA" color="1" fill="9" visible="no" active="no"/>
 <layer number="56" name="wert" color="7" fill="1" visible="no" active="no"/>
 <layer number="57" name="tCAD" color="7" fill="1" visible="no" active="no"/>
+<layer number="58" name="bCopper" color="7" fill="1" visible="no" active="no"/>
 <layer number="59" name="tCarbon" color="7" fill="1" visible="no" active="no"/>
 <layer number="60" name="bCarbon" color="7" fill="1" visible="no" active="no"/>
 <layer number="88" name="SimResults" color="9" fill="1" visible="no" active="yes"/>
@@ -109,8 +110,20 @@
 <layer number="127" name="_tValues" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="128" name="_bValues" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="129" name="Mask" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="130" name="SMDSTROOK" color="7" fill="1" visible="no" active="no"/>
 <layer number="131" name="tAdjust" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="132" name="bAdjust" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="133" name="bottom_silk" color="7" fill="1" visible="no" active="no"/>
+<layer number="134" name="silk_top" color="7" fill="1" visible="no" active="no"/>
+<layer number="135" name="silk_bottom" color="7" fill="1" visible="no" active="no"/>
+<layer number="136" name="silktop" color="7" fill="1" visible="no" active="no"/>
+<layer number="137" name="silkbottom" color="7" fill="1" visible="no" active="no"/>
+<layer number="138" name="EEE" color="7" fill="1" visible="no" active="no"/>
+<layer number="139" name="_tKeepout" color="7" fill="1" visible="no" active="no"/>
+<layer number="140" name="mbKeepout" color="7" fill="1" visible="no" active="no"/>
+<layer number="141" name="ASSEMBLY_TOP" color="7" fill="1" visible="no" active="no"/>
+<layer number="142" name="mbRestrict" color="7" fill="1" visible="no" active="no"/>
+<layer number="143" name="PLACE_BOUND_TOP" color="7" fill="1" visible="no" active="no"/>
 <layer number="144" name="Drill_legend" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="145" name="DrillLegend_01-02" color="7" fill="1" visible="no" active="no"/>
 <layer number="146" name="DrillLegend_01-15" color="7" fill="1" visible="no" active="no"/>
@@ -123,6 +136,14 @@
 <layer number="153" name="FabDoc1" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="154" name="FabDoc2" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="155" name="FabDoc3" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="166" name="AntennaArea" color="7" fill="1" visible="no" active="no"/>
+<layer number="168" name="4mmHeightArea" color="7" fill="1" visible="no" active="no"/>
+<layer number="191" name="mNets" color="7" fill="1" visible="no" active="no"/>
+<layer number="192" name="mBusses" color="7" fill="1" visible="no" active="no"/>
+<layer number="193" name="mPins" color="7" fill="1" visible="no" active="no"/>
+<layer number="194" name="mSymbols" color="7" fill="1" visible="no" active="no"/>
+<layer number="195" name="mNames" color="7" fill="1" visible="no" active="no"/>
+<layer number="196" name="mValues" color="7" fill="1" visible="no" active="no"/>
 <layer number="199" name="Contour" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="200" name="200bmp" color="1" fill="10" visible="no" active="no"/>
 <layer number="201" name="201bmp" color="2" fill="1" visible="no" active="no"/>
@@ -162,6 +183,7 @@
 <layer number="249" name="Edge" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="250" name="Descript" color="3" fill="1" visible="no" active="no"/>
 <layer number="251" name="SMDround" color="12" fill="11" visible="no" active="no"/>
+<layer number="253" name="Extra" color="7" fill="1" visible="no" active="no"/>
 <layer number="254" name="cooling" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="255" name="routoute" color="7" fill="1" visible="yes" active="yes"/>
 </layers>
@@ -12840,9 +12862,7 @@ will be further integrated into the Sparkfun Library for other footprints.  It c
 <part name="JP5" library="SparkFun" deviceset="M06" device="SIP"/>
 <part name="JP6" library="SparkFun" deviceset="M06" device="SIP"/>
 <part name="J8" library="SparkFun-Connectors" deviceset="CONN_03" device="" value="455-1750-1-ND"/>
-<part name="J9" library="SparkFun-Connectors" deviceset="CONN_03" device="" value="455-1750-1-ND"/>
 <part name="J11" library="SparkFun-Connectors" deviceset="CONN_03" device="" value="455-1750-1-ND"/>
-<part name="J12" library="SparkFun-Connectors" deviceset="CONN_03" device="" value="455-1750-1-ND"/>
 <part name="J13" library="SparkFun-Connectors" deviceset="CONN_04" device="PTH"/>
 <part name="J3" library="SparkFun-Connectors" deviceset="QWIIC_CONNECTOR" device="JS-1MM"/>
 <part name="JP1" library="SparkFun-Connectors" deviceset="M02" device="JST-PTH-2"/>
@@ -12856,7 +12876,7 @@ will be further integrated into the Sparkfun Library for other footprints.  It c
 <sheet>
 <plain>
 <text x="40.64" y="175.26" size="2.032" layer="97" font="vector" ratio="15">Arduino Shield for
-Sparkfun Redboard Turbo
+Sparkfun SAMD51 Micro-Mod
 or Adafruit M4 Metro</text>
 <text x="40.64" y="121.92" size="1.651" layer="95" font="vector">Arduino_R3_Shield</text>
 <text x="17.78" y="137.16" size="1.778" layer="95" font="vector" rot="R90">Reset</text>
@@ -12881,10 +12901,6 @@ Inclinometers
 SPI Interface</text>
 <text x="15.24" y="33.02" size="1.778" layer="91">Azimuth
 Reference</text>
-<text x="15.24" y="12.7" size="1.778" layer="91">Horizon
-Reference</text>
-<text x="93.98" y="48.26" size="1.778" layer="91">Zenith Reference
-Header</text>
 <text x="236.22" y="160.02" size="1.778" layer="91">Encoder
 Cable
 Jack</text>
@@ -12909,9 +12925,9 @@ Header</text>
 with SAMD processors.
 Do NOT attempt to use
 software with UNO.</text>
-<text x="175.26" y="60.96" size="1.778" layer="91">These Schmitt Triggers are used for noise immunity
-on the two most likely used Reference Sensors.</text>
-<text x="157.48" y="177.8" size="1.778" layer="91">Encoder Direction Selection
+<text x="152.4" y="60.96" size="1.778" layer="91">This Schmitt Trigger is used for noise immunity
+on the Azimuth Reference Sensor.</text>
+<text x="170.18" y="157.48" size="1.778" layer="91">Encoder Direction Selection
 is now done in software</text>
 <text x="63.5" y="30.48" size="1.778" layer="91">5 volts regulated
 only on this
@@ -12923,7 +12939,7 @@ Header</text>
 <text x="109.22" y="86.36" size="1.778" layer="91">Murata SCL3300
 Inclinometer Headers</text>
 <text x="111.76" y="60.96" size="1.778" layer="91">Rocker</text>
-<text x="124.46" y="60.96" size="1.778" layer="91">Tube</text>
+<text x="121.92" y="60.96" size="1.778" layer="91">Altitude</text>
 <text x="60.96" y="76.2" size="1.778" layer="91" align="center-left">Serial2 Rx - from XBee</text>
 <text x="60.96" y="78.74" size="1.778" layer="91" align="center-left">Serial2 Tx - to XBee</text>
 </plain>
@@ -12971,14 +12987,6 @@ Inclinometer Headers</text>
 <attribute name="VALUE" x="144.78" y="17.526" size="1.778" layer="96" font="vector" rot="R180"/>
 <attribute name="NAME" x="144.78" y="9.652" size="1.778" layer="95" font="vector" rot="R180"/>
 </instance>
-<instance part="IC1" gate="A" x="195.58" y="172.72" smashed="yes" rot="MR0">
-<attribute name="NAME" x="193.04" y="175.895" size="1.778" layer="95" rot="MR0"/>
-<attribute name="VALUE" x="193.04" y="167.64" size="1.778" layer="96" rot="MR0"/>
-</instance>
-<instance part="IC1" gate="B" x="195.58" y="160.02" smashed="yes" rot="MR0">
-<attribute name="NAME" x="193.04" y="163.195" size="1.778" layer="95" rot="MR0"/>
-<attribute name="VALUE" x="193.04" y="154.94" size="1.778" layer="96" rot="MR0"/>
-</instance>
 <instance part="IC1" gate="C" x="195.58" y="147.32" smashed="yes" rot="MR0">
 <attribute name="NAME" x="193.04" y="150.495" size="1.778" layer="95" rot="MR0"/>
 <attribute name="VALUE" x="193.04" y="142.24" size="1.778" layer="96" rot="MR0"/>
@@ -12990,10 +12998,6 @@ Inclinometer Headers</text>
 <instance part="IC1" gate="E" x="172.72" y="73.66" smashed="yes" rot="MR0">
 <attribute name="NAME" x="170.18" y="76.835" size="1.778" layer="95" rot="MR0"/>
 <attribute name="VALUE" x="170.18" y="68.58" size="1.778" layer="96" rot="MR0"/>
-</instance>
-<instance part="IC1" gate="F" x="220.98" y="73.66" smashed="yes" rot="MR0">
-<attribute name="NAME" x="218.44" y="76.835" size="1.778" layer="95" rot="MR0"/>
-<attribute name="VALUE" x="218.44" y="68.58" size="1.778" layer="96" rot="MR0"/>
 </instance>
 <instance part="IC2" gate="G$1" x="119.38" y="162.56" smashed="yes">
 <attribute name="NAME" x="109.22" y="173.99" size="1.778" layer="95"/>
@@ -13035,14 +13039,8 @@ Inclinometer Headers</text>
 <instance part="J8" gate="J$1" x="10.16" y="43.18" smashed="yes">
 <attribute name="NAME" x="7.62" y="48.768" size="1.778" layer="95" font="vector"/>
 </instance>
-<instance part="J9" gate="J$1" x="10.16" y="22.86" smashed="yes">
-<attribute name="NAME" x="7.62" y="28.448" size="1.778" layer="95" font="vector"/>
-</instance>
 <instance part="J11" gate="J$1" x="50.8" y="43.18" smashed="yes" rot="MR0">
 <attribute name="NAME" x="53.34" y="48.768" size="1.778" layer="95" font="vector" rot="MR0"/>
-</instance>
-<instance part="J12" gate="J$1" x="96.52" y="38.1" smashed="yes">
-<attribute name="NAME" x="93.98" y="43.688" size="1.778" layer="95" font="vector"/>
 </instance>
 <instance part="J13" gate="J1" x="48.26" y="73.66" smashed="yes">
 <attribute name="VALUE" x="43.18" y="66.294" size="1.778" layer="96" font="vector"/>
@@ -13197,19 +13195,9 @@ Inclinometer Headers</text>
 <label x="20.32" y="43.18" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
-<pinref part="J9" gate="J$1" pin="2"/>
-<wire x1="17.78" y1="22.86" x2="20.32" y2="22.86" width="0.1524" layer="91"/>
-<label x="20.32" y="22.86" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
 <pinref part="J4" gate="J$1" pin="3"/>
 <wire x1="43.18" y1="25.4" x2="40.64" y2="25.4" width="0.1524" layer="91"/>
 <label x="40.64" y="25.4" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-<segment>
-<pinref part="J12" gate="J$1" pin="2"/>
-<wire x1="104.14" y1="38.1" x2="106.68" y2="38.1" width="0.1524" layer="91"/>
-<label x="106.68" y="38.1" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
 <pinref part="JP7" gate="G$1" pin="4"/>
@@ -13402,11 +13390,6 @@ Inclinometer Headers</text>
 <label x="106.68" y="119.38" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 <segment>
-<pinref part="J9" gate="J$1" pin="1"/>
-<wire x1="17.78" y1="20.32" x2="20.32" y2="20.32" width="0.1524" layer="91"/>
-<label x="20.32" y="20.32" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
 <pinref part="J8" gate="J$1" pin="1"/>
 <wire x1="17.78" y1="40.64" x2="20.32" y2="40.64" width="0.1524" layer="91"/>
 <label x="20.32" y="40.64" size="1.27" layer="95" xref="yes"/>
@@ -13455,11 +13438,6 @@ Inclinometer Headers</text>
 <pinref part="J11" gate="J$1" pin="2"/>
 <wire x1="43.18" y1="43.18" x2="40.64" y2="43.18" width="0.1524" layer="91"/>
 <label x="40.64" y="43.18" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-<segment>
-<pinref part="J12" gate="J$1" pin="1"/>
-<wire x1="104.14" y1="35.56" x2="106.68" y2="35.56" width="0.1524" layer="91"/>
-<label x="106.68" y="35.56" size="1.27" layer="95" xref="yes"/>
 </segment>
 <segment>
 <pinref part="ICSP" gate="G$1" pin="2"/>
@@ -13612,27 +13590,19 @@ Inclinometer Headers</text>
 <net name="N$6" class="0">
 <segment>
 <wire x1="226.06" y1="154.94" x2="223.52" y2="154.94" width="0.1524" layer="91"/>
-<pinref part="IC1" gate="B" pin="I"/>
-<wire x1="223.52" y1="154.94" x2="223.52" y2="160.02" width="0.1524" layer="91"/>
-<wire x1="223.52" y1="160.02" x2="205.74" y2="160.02" width="0.1524" layer="91"/>
 <pinref part="J1" gate="JP1" pin="1"/>
 <pinref part="J2" gate="G$1" pin="1"/>
 <wire x1="223.52" y1="154.94" x2="223.52" y2="101.6" width="0.1524" layer="91"/>
 <wire x1="223.52" y1="101.6" x2="236.22" y2="101.6" width="0.1524" layer="91"/>
-<junction x="223.52" y="154.94"/>
 </segment>
 </net>
 <net name="N$7" class="0">
 <segment>
 <wire x1="226.06" y1="149.86" x2="220.98" y2="149.86" width="0.1524" layer="91"/>
-<pinref part="IC1" gate="A" pin="I"/>
-<wire x1="220.98" y1="149.86" x2="220.98" y2="172.72" width="0.1524" layer="91"/>
-<wire x1="220.98" y1="172.72" x2="205.74" y2="172.72" width="0.1524" layer="91"/>
 <pinref part="J1" gate="JP1" pin="3"/>
 <pinref part="J2" gate="G$1" pin="3"/>
 <wire x1="220.98" y1="149.86" x2="220.98" y2="106.68" width="0.1524" layer="91"/>
 <wire x1="220.98" y1="106.68" x2="236.22" y2="106.68" width="0.1524" layer="91"/>
-<junction x="220.98" y="149.86"/>
 </segment>
 </net>
 <net name="N$10" class="0">
@@ -13727,30 +13697,6 @@ Inclinometer Headers</text>
 <label x="137.16" y="93.98" size="1.4224" layer="95" rot="R90" xref="yes"/>
 </segment>
 </net>
-<net name="AL_B" class="0">
-<segment>
-<label x="172.72" y="172.72" size="1.27" layer="95" rot="MR0" xref="yes"/>
-<wire x1="172.72" y1="172.72" x2="185.42" y2="172.72" width="0.1524" layer="91"/>
-<pinref part="IC1" gate="A" pin="O"/>
-</segment>
-<segment>
-<pinref part="JP3" gate="G$1" pin="6"/>
-<wire x1="162.56" y1="93.98" x2="160.02" y2="93.98" width="0.1524" layer="91"/>
-<label x="160.02" y="93.98" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-</net>
-<net name="AL_A" class="0">
-<segment>
-<label x="172.72" y="160.02" size="1.27" layer="95" rot="MR0" xref="yes"/>
-<wire x1="172.72" y1="160.02" x2="185.42" y2="160.02" width="0.1524" layer="91"/>
-<pinref part="IC1" gate="B" pin="O"/>
-</segment>
-<segment>
-<pinref part="JP3" gate="G$1" pin="5"/>
-<wire x1="162.56" y1="96.52" x2="160.02" y2="96.52" width="0.1524" layer="91"/>
-<label x="160.02" y="96.52" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-</net>
 <net name="AZ_A" class="0">
 <segment>
 <label x="172.72" y="147.32" size="1.27" layer="95" rot="MR0" xref="yes"/>
@@ -13793,11 +13739,6 @@ Inclinometer Headers</text>
 <pinref part="JP6" gate="G$1" pin="2"/>
 <label x="106.68" y="121.92" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
-<segment>
-<pinref part="IC1" gate="F" pin="O"/>
-<wire x1="210.82" y1="73.66" x2="208.28" y2="73.66" width="0.1524" layer="91"/>
-<label x="208.28" y="73.66" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
 </net>
 <net name="A0" class="0">
 <segment>
@@ -13830,18 +13771,6 @@ Inclinometer Headers</text>
 <label x="190.5" y="96.52" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
-<net name="ZENITH" class="0">
-<segment>
-<pinref part="JP6" gate="G$1" pin="5"/>
-<wire x1="109.22" y1="114.3" x2="106.68" y2="114.3" width="0.1524" layer="91"/>
-<label x="106.68" y="114.3" size="1.27" layer="95" rot="MR0" xref="yes"/>
-</segment>
-<segment>
-<pinref part="J12" gate="J$1" pin="3"/>
-<wire x1="104.14" y1="40.64" x2="106.68" y2="40.64" width="0.1524" layer="91"/>
-<label x="106.68" y="40.64" size="1.27" layer="95" xref="yes"/>
-</segment>
-</net>
 <net name="AZREF" class="0">
 <segment>
 <pinref part="IC1" gate="E" pin="I"/>
@@ -13852,18 +13781,6 @@ Inclinometer Headers</text>
 <pinref part="J8" gate="J$1" pin="3"/>
 <wire x1="17.78" y1="45.72" x2="20.32" y2="45.72" width="0.1524" layer="91"/>
 <label x="20.32" y="45.72" size="1.27" layer="95" xref="yes"/>
-</segment>
-</net>
-<net name="HORIZON" class="0">
-<segment>
-<pinref part="IC1" gate="F" pin="I"/>
-<wire x1="231.14" y1="73.66" x2="233.68" y2="73.66" width="0.1524" layer="91"/>
-<label x="233.68" y="73.66" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
-<pinref part="J9" gate="J$1" pin="3"/>
-<wire x1="17.78" y1="25.4" x2="20.32" y2="25.4" width="0.1524" layer="91"/>
-<label x="20.32" y="25.4" size="1.27" layer="95" xref="yes"/>
 </segment>
 </net>
 <net name="LCD" class="0">
@@ -13881,9 +13798,6 @@ Inclinometer Headers</text>
 </nets>
 </sheet>
 </sheets>
-<errors>
-<approved hash="202,1,106.68,167.64,IC2,WP,,,,"/>
-</errors>
 </schematic>
 </drawing>
 <compatibility>

@@ -1,15 +1,18 @@
 # SAMDTelescopeController
-Arduino SAMD51-based Telescope Controller 4.00.00
 
-#### By David Armstrong, August 2023
+## Arduino SAMD51-based Telescope Controller 4.00.00 Sketch
+
+### TC4.0 Main Controller Sketch Readme File
+
+#### By David Armstrong, December 2025
  - See MIT LICENSE.md file
 
 =============================<br>
 
 This folder contains the actual Telescope Controller sketch, TC4_0.ino.  There are several other
-files used with this file to create the final image that is transferred to the SAMD51 flash.
+files in the folder used with this file to create the final image that is transferred to the SAMD51 flash.
 
-The system may be used just as Digital Setting circles with no motors. But that means manually
+The application may be used just as Digital Setting circles with no motors. But that means manually
 moving the 'scope around. Of course, motors can be added later.
 
 DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
@@ -19,7 +22,7 @@ It is assumed that the sketch under TC4_0diagnostics has already been run, and i
 hardware interfaces and library installations needed.
 That sketch has its own Readme file.  Its purpose was to prove that you have all the needed
 libraries installed, and that the relevant hardware interfaces exist and can communicate with the
-system. If one get a library error, the code gives a URL for where each
+system. If one gets a library error, the code gives a URL for where each
 library can be downloaded.
 
 After the TC4_0diagnostics has run, move on to this main sketch, TC4_0.
@@ -28,20 +31,24 @@ After the TC4_0diagnostics has run, move on to this main sketch, TC4_0.
 
 At the beginning of the file is a section to allow setting various options and known values.
 
-Lines 22-23: Encoder count range per axis, if known.  If not, leave defined at 0L.
-If you know the encoder count range in azimuth and altitude, these values can be hardcoded and always used.  Otherwise, the system will attempt to figure out on its own what the ranges are.
+Lines 25: Azimuth Encoder count range, if known.  If not, leave defined at 0L.
+If you know the encoder count range in azimuth, this value can be hardcoded and always used.  Otherwise, the system will attempt to figure out on its own what the range is.
 
-Lines 26-27: Uncomment if associated Encoder is changing counts backwards.
+Lines 28: Uncomment if Azimuth Encoder is changing counts backwards.
 
-Lines 30-31: Uncomment if associated Motor is moving backwards.
+Lines 31-32: Uncomment if associated Motor is moving backwards.
 
-Line 35: Default Time Zone, usually in the range -12.0 to +12.0. This is in hours offset from GMT.
+Line 36: Default Time Zone, usually in the range -12.0 to +12.0. This is in hours offset from GMT.
 
-Lines 37-38: Daylight saving usage - Auto figures out if DST is active or not in US locations only.
+Lines 38-39: Daylight saving usage - Automatically figures out if DST is active or not in US locations only.
 
-Lines 46, 49: Select Terminal display output, either Serial (USB) or Serial2 (XeeBee module)
+Lines 47, 50: Select Terminal display output, either Serial (USB) or Serial2 (XeeBee module)
 
-Line 54: Select LCD output. Defaults to Serial1.
+Line 55: Select LCD output. Defaults to Serial1.
+
+Lines 58, 60: Select which type of Magnetic Compass Sensor is in use.
+
+Line 65 : Select offset into EEPROM that persistent data values are recorded.  Usually this is '0'.
 
 Other options can be set inside the sketch itself while it is running. Those options are set to default settings
 defined in tcinit.ino.
@@ -73,16 +80,18 @@ or internally in the sketch itself as a selectable option when it is run.
 
 A. Use the USB interface to the processor board.  It's the default, but requires a USB cable. (Serial)
 B. Use Xbee hardware to allow a wireless serial connection to the system. (Serial2)
+   This is useful when running Tera-Term on a connected Windows laptop.
 C. Use an LCD display with IR remote for input. (Serial1 or I2C)
+   No external cabling required for this option.
 
 One has to choose either A or B.  Option C can be used by itself, but one of the
 other methods has to initially at least be designated as well.
 
 When the system first powers on, it detects what is connected, and adapts as it can accordingly.
 
-To that end, there should be an Azimuth Reference Sensor provided on the telescope mount.  This can be either a switch, light sensor, or magnetic Hall-effect sensor.  Otherwise, the program will ask for manual help in initialization. An inclinometer can also be added to the rocker board to help level the telescope in azimuth, and the system will prompt for that when it is ready.  Note that placement of the Azimuth Reference sensor should be such so that it permits leveling adjustments to be done when the telescope is at that position.
+To that end, there should be an Azimuth Reference Sensor provided on the telescope mount.  This can be either a switch, light sensor, or magnetic Hall-effect sensor.  Otherwise, the program will ask for manual help in initialization. An inclinometer can be added to the rocker board to help level the telescope in azimuth, and the system will prompt for that when it is ready.  Note that placement of the Azimuth Reference sensor should be such so that it permits leveling adjustments to be done when the telescope is at that position.
 
-The altitude range needs either sensors for horizon and zenith positions, or an inclinometer. Again, not providing either of these options results in the program prompting for user input to initialize the Altitude axis.
+The altitude axis needs an SCL3300 inclinometer installed on the telescope tube itself.
 
 ====================================<br>
 

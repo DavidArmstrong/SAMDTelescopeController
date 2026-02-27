@@ -1,48 +1,13 @@
 /* Telescope Controller 4.00.00 - User I/O functions
-// July 2023
+// February 2026
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
 
 #include "tcheader.h"
 
-void oledprintData() {
-  if (eecharbuf.strunion.OLEDflag) {
-    //oled.clear(PAGE);
-    oled.setFontType(0);
-    oled.setCursor(0, 0);
-    if (BMEpresent) {
-      oled.print(FTEMPF, 1);
-      oled.print(" F ");
-      oled.print(FHUMID, 0);
-      oled.print("%");
-      oled.print(FPINHG, 2);
-      oled.print(" InHg");
-    }
-#ifdef __HMC6352__
-    if (getMagCompassPresent()) {
-      oled.print(FMAGHDG, 1);
-      oled.print(" Hdg \n");
-    }
-#endif
-    // ...and time
-    print2digits((int)myAstro.getLT());
-    oled.print(":");
-    DateTime now = rtczero.now();
-    print2digits(now.minute());
-    oled.print(":");
-    print2digits(now.second());
-    oled.display();
-  }
-}
-
 void printstatusscreen() {
   LCDclear();
-  if (eecharbuf.strunion.OLEDflag) {
-    oled.begin();
-    oled.clear(ALL);
-    oled.display();
-  }
   myAstro.setTimeZone(eecharbuf.strunion.DTZONE);
   if (DSTAUTOFLAG) DSTFLAG = myAstro.useAutoDST();
   TERMclear();
@@ -91,12 +56,12 @@ void printstatusscreen() {
   TCterminal.println("Target Object:");
   TCterminal.println("Current Diffs from Target:"); //  V xxxx  > xxxx");
   if (!(MotorDriverflag && eecharbuf.strunion.enableRealHwInit)) {
-  TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Power    Current  Magnetic");
-  TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Voltage  (mA)     Variation");
+  TCterminal.println("Maximum Ranges       Base Tilt     Tube Tilt      Magnetic");
+  TCterminal.println("Azimuth   Altitude   X      Y      X      Y       Variation");
   //16000000  16000000   100000    0.0  0.0    45.3 0.0    12.12
   } else {
-  TCterminal.println("Maximum Ranges                                    Power    Current  Magnetic");
-  TCterminal.println("Azimuth   Altitude                                Voltage  (mA)     Variation");
+  TCterminal.println("Maximum Ranges                                    Magnetic");
+  TCterminal.println("Azimuth   Altitude                                Variation");
   }
   TERMALLOPTIONS();
   //TCterminal.println("Command:  0-8 Sun, Moon, Planet   . Star   - Non-Stellar (Scan)");
@@ -171,20 +136,20 @@ void printstatusscreen() {
 
 void showDate() {
   // Print date...
+  print2digitsUSB(GRYEAR);
+  TCterminal.print("/");
   print2digitsUSB(GRMONTH);
   TCterminal.print("/");
   print2digitsUSB(GRDAY);
-  TCterminal.print("/");
-  print2digitsUSB(GRYEAR);
 }
 
 void showDateLCD() {
   // Print date...
+  print2digitsLCD(GRYEAR);
+  LCDprint("/");
   print2digitsLCD(GRMONTH);
   LCDprint("/");
   print2digitsLCD(GRDAY);
-  LCDprint("/");
-  print2digitsLCD(GRYEAR);
 }
 
 void printObject() {
@@ -654,28 +619,10 @@ void updatestatusscreen() {
     } else tubeTilt.reset();
   }
   } // */
-  if (eecharbuf.strunion.INA219flag && (tmpminutes != rtcmin)) {
-    // Only update once a minute to reduce needed screen writes
-    // Compute load voltage
-    ftmp = ina219.getBusVoltage_V() + (ina219.getShuntVoltage_mV() / 1000.);
-    ftmp2 = ina219.getCurrent_mA();
-    if (busvolts != ftmp || current_mA != ftmp2) {
-      busvolts = ftmp;
-      current_mA = ftmp2;
-      if (eecharbuf.strunion.SerialTermflag) {
-        TERMxy(52, 21);
-        TCterminal.print(busvolts, 2); // Voltage monitor
-        TCterminal.print(" ");
-        TERMxy(60, 21);
-        TCterminal.print(current_mA, 2); // Current monitor
-        TCterminal.print(" ");
-      }
-    }
-  }
   if (magVariationUpdateFlag && (fabs(magVariation - tmpMagVariation) > 0.1)) {
     magVariation = tmpMagVariation;
     if (eecharbuf.strunion.SerialTermflag) {
-      TERMxy(69, 21); TCterminal.print(magVariation);
+      TERMxy(52, 21); TCterminal.print(magVariation);
       TCterminal.print("  ");
     }
 	magVariationInAzimuthCounts = magVariation * ((double)RRAAZ) / 360.0;

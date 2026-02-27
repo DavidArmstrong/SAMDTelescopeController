@@ -76,13 +76,6 @@ void printTimeLCD(double n) {
   print2digitsLCD(abs(secs)); LCDprint(" ");
 }
 
-void print2digits(int number) {
-  if (number < 10) {
-    oled.print("0"); // print a 0 before if the number is < than 10
-  }
-  oled.print(number);
-}
-
 void print2digitsUSB(int number) {
   if (number < 10) {
     TCterminal.print("0");

@@ -1,8 +1,10 @@
 # SAMDTelescopeController
 
-## Arduino SAMD51-based Telescope Controller 4.00.00
+## Arduino SAMD51-based Telescope Controller 4.00.00 Documentation
 
-#### By David Armstrong, August 2023
+### Docs directory Readme File
+
+#### By David Armstrong, December 2025
  - See MIT LICENSE file
 
 ========================================================================
@@ -23,7 +25,7 @@ There is also a draw.io based diagram showing at a high level how all the parts 
 with each other. This includes both the draw.io diagram source, and a 
 'TelescopeController4_0.drawio.png' image file created by draw.io.
 
-Both the TC4_0/ and TC4_0diagnostics/ directories are Arduino sketches, and should be copied to the Arduino/ directory, where Arduino IDE sketch projects are stored.
+The TC4_0/, TC4_0diagnostics/, and TC4_0powerMonitor/ directories are three separate Arduino sketches, and should each be copied to the Arduino/ directory on your computer, where Arduino IDE sketch projects are stored.
 
 
 ## Installing the Required Arduino Libraries
@@ -35,7 +37,6 @@ not all.
 Here is a list of the libraries that the Arduino IDE Library Manager knows about that must be installed:
 
 
-Adafruit INA219  https://github.com/adafruit/Adafruit_INA219 <br>
 ANSI  https://github.com/RobTillaart/ANSI <br>
 CurveFitting  https://github.com/Rotario/arduinoCurveFitting <br>
 Encoder  https://github.com/PaulStoffregen/Encoder <br>
@@ -46,7 +47,6 @@ Serial Controlled Motor Driver  https://github.com/sparkfun/SparkFun_Serial_Cont
 SiderealPlanets  https://github.com/DavidArmstrong/SiderealPlanets <br>
 SiderealObjects  https://github.com/DavidArmstrong/SiderealObjects <br>
 Sparkfun BME280  https://github.com/sparkfun/SparkFun_BME280_Arduino_Library <br>
-Sparkfun Micro OLED Breakout  https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library <br>
 Sparkfun MMC5983MA Magnetometer Arduino Library  https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library <br>
 Sparkfun SerLCD Arduino Library  https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library <br>
 Sparkfun u-blox GNSS Arduino Library  https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library <br>
@@ -57,6 +57,7 @@ There are also a few libraries that must be loaded directly from their on-line r
 
 AMD51 Interrupt Timer library  https://github.com/Dennis-van-Gils/SAMD51_InterruptTimer <br>
 HMC6352-Arduino-Library  https://github.com/funflin/HMC6352-Arduino-Library <br>
+Sparkfun HMC6343 Arduino Library  https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library <br>
 IRLib2  https://github.com/cyborg5/IRLib2
 
 
@@ -68,8 +69,18 @@ You must change lines 18-19 as follows:
 //#define IR_TCn 3
 #define IR_TCn 4
 ```
+Also, in this same file, you must fix line 31 to add in the missing quote character at the end:
+
+```
+    #error "Unsupported output pin on Adafruit Metro M4"
+```
 
 Otherwise, if this is not done the application will NOT compile.
+
+Finally, the optional TC4_0powerMonitor, if used, will require two additional libraries to be installed:
+
+Adafruit INA219  https://github.com/adafruit/Adafruit_INA219 <br>
+Sparkfun Micro OLED Breakout  https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library <br>
 
 
 ## Initial Testing
@@ -80,12 +91,17 @@ one at a time, to make sure each can be reached and responds as expected when it
 initialized.  Please refer to the Readme file that is with that sketch for specific 
 instructions on how to set up and run the application.
 
-Note that while two different Magnetic Compass Libraries are loaded, only one will actually
-be used by the application. It depends on which one is physically present.
+Note that while two or three different Magnetic Compass Libraries may loaded, only one will actually
+be used by the application. It depends on which one is physically present, and on configuring
+the software options.
 
 After the TC4_0diagnostics.ino sketch tests pass, you can move on to compiling and using
 the TC4_0.ino application, located in the TC4_0 folder.
 
+Finally, as an optional utility, there is the TC4_0powerMonitor.ino sketch.  This allows real-time
+monitoring of a 12 volt gel-cell battery, should that be used to power the system.  It includes
+the capability of providing an estimate of how much power is available to use. The sketch is hosted
+on a separate SAMD21 MCU, so it runs independently of the main controller.
 
 Note: DO NOT ATTEMPT TO LOAD THIS CODE ONTO A STANDARD Arduino UNO BOARD.
 
@@ -102,11 +118,14 @@ start in demo mode.  (Pins SDA, SCL; IIC address 0x50)
 to force a clean re-initialization of the system should things just get into a bad state.
 (i.e. Like bad values saved into the EEPROM listed in #1 above.) (Pin 19 = A5)
 
-2. Two Quadrature Optical Encoders (required) - You will need mounting hardware for those 
-encoders.  This will allow using the program, at a minimum, as Digital Setting Circles on your 
-telescope.  (Pins A1,A2 for azimuth and A3,A4 for altitude)
+2. A Quadrature Optical Encoder (required) - You will need mounting hardware for this 
+encoder on the Azimuth axis.  This will allow using the program, at a minimum, as Digital Setting Circles on your 
+telescope.  (Pins A1,A2 for azimuth)
 
-3. Level shifter (required) - Needed to translate the 5 volt signals from the encoders to
+2a. Murata SCL3300 SPI inclinometer - You will need an inclinometer, mounted on the telescope tube, for Altitude orientation determination.
+( pins 22,23,24 on ICSP header, and Chip Select Pin 9 )
+
+3. Level shifter (required) - Needed to translate the 5 volt signals from the Azimuth encoder to
 3.3 volts for the processor board.  (I haven't seen 3.3 volt quadrature encoders made yet in 
 the resolutions needed for telescope positioning.)
 
@@ -125,7 +144,7 @@ Consider these options:
 Screen output can be sent to Serial2 in the code, which will send UART
 data to D4(Rx)/D7(Tx) for the SAMD51.  Using Serial2 
 may be faster than relying on the Serial port, which is the default.  
-The option is enabled at the top of file TC4_0.ino.  The other end of the XBee connection should have a VT100 compatible terminal emulator program.  (I use Tera-Term for Windows 10.)
+The option is enabled at the top of file TC4_0.ino.  The other end of the XBee connection should have a VT100 compatible terminal emulator program.  (I use Tera-Term for Windows 11.)
 
 6. Remove requirement for a laptop with:<br>
   A. 4x20 character LCD display (Pin D1 - Serial TX is recommended) OR use I2C bus<br>
@@ -139,15 +158,14 @@ I2C BME280 Barometric Pressure, Temperature, Humidity Sensor (IIC address 0x77)
 (Not needed at all for a permanently mounted telescope.  See #13 below.  It's an aid
 for portable telescopes, as it can help you find alignment stars when setting up.)
 I2C Magnetic Compass (HMC6352 IIC address 0x21) 
-OR (MMC5983MA IIC address 0x30 - recommended)
+OR (MMC5983MA IIC address 0x30)
+OR (HMC6343 IIC address 0x32, 0x33 - recommended)
 
 9. Account for mechanical level of telescope:
 (Portable systems can benefit from this option.  Permanently mounted telescopes should be
 mounted properly anyway, which makes this unnecessary.  See #13 below.)
 Murata SCL3300 SPI inclinometer - for an Alt-Azimuth base for level determination
 (pins 22,23,24 on ICSP header, and Chip Select Pin 10 )<br>
-Note: Add a second SCL3300, mounted on the telescope tube, for Altitude orientation determination.
-( Chip Select Pin 9 )
 
 10. Separate Status display, just because I think it's cool:
 I2C OLED display (IIC address 0x3c)
@@ -163,8 +181,7 @@ The How-To for this is your responsibility, which is why I list it as nearly dea
 You choose the drive system.
 
 13. Permanently mounted telescopes can automate initialization further by installing:
-2 Reference Sensors to determine specific reference points in each axis.  (Pins 5,8)
-Note: The Horizon/Altitude reference may still be good to have for a portable system.  It can be used with the inclinometer to determine the real horizon point, independent of an alignment star.
+Reference Sensor to determine specific Azimuth reference point in that axis.  (Pin 8)
 
 Now if you have all that, then zero alignment stars are needed to set up the system
 for an observing session.  In fact, it becomes zero alignment, mostly.  Just turn it on, let it do its setup, and tell it where to go. (I state 'mostly' because the controller still uses a tweaking star/planet on initialization to account for errors. But the system will point to that object for you.)

@@ -1,7 +1,10 @@
 # SAMDTelescopeController
-Arduino SAMD51-based Telescope Controller 4.00.00 Diagnostics Sketch
 
-#### By David Armstrong, August 2023
+## Arduino SAMD51-based Telescope Controller 4.00.00 Diagnostics Sketch
+
+### TC4.0 Diagnostics Sketch Readme File
+
+#### By David Armstrong, December 2025
  - See MIT LICENSE.md file
 
 ==================================================================
@@ -47,7 +50,9 @@ Lines 25-26: Uncomment if associated Motor is moving backwards.
 
 Line 29: Comment out if not using old HMC6352 magnetic compass. The sketch assumes the use of SFE_MMC5983MA by default.
 
-Lines 41-53: Provided for reference on Arduino Pin Usage in this project.
+Line 31: Comment out if not using the HMC6343 magnetic compass.
+
+Lines 43-55: Provided for reference on Arduino Pin Usage in this project.
 
 
 ## Preparing The Libraries
@@ -64,6 +69,11 @@ You must change lines 18-19 as follows:
 ```
 //#define IR_TCn 3
 #define IR_TCn 4
+```
+Also, in this same file, you must fix line 31 to add in the missing quote character at the end:
+
+```
+    #error "Unsupported output pin on Adafruit Metro M4"
 ```
 
 Otherwise, the application will NOT compile.
@@ -102,43 +112,28 @@ The following is a list of all the tests run by the sketch:
 If not, uncomment line #define SWAP_AZIMUTH_ENCODER_AB<br>
 Use a Carriage Return/Enter key to terminate the test.
 
-4. Altitude Encoder check. Counts must increase when going from Horizon to Zenith.
-If not, uncomment line #define SWAP_ALTITUDE_ENCODER_AB<br>
+4. Verify presence of I2C EEPROM.
+
+5. u-blox GPS module detection.
+
+6. Detects rocker (optional) Murata SCL3300 Inclinometer Sensor.
+
+7. Detects tube/Altitude (required) Murata SCL3300 Inclinometer Sensor.
+
+8. Magnetic Compass detection. Can check for MMC5983MA, HMC6352, or HMC6343.
+
+9. BME280 Temperature, Pressure,Humidity Sensor detection.
+
+10. Azimuth Reference Sensor Detection. The test will indication if the digital line is HIGH or LOW.
 Use a Carriage Return/Enter key to terminate the test.
 
-5. Verify presence of I2C EEPROM.
-
-6. u-blox GPS detection.
-
-7. Murata SCL3300 Inclinometer Sensors detection.  Detects either/both rocker and tube tilt sensors.
-
-8. MMC5983MA Magnetic Compass detection.
-
-9. INA219 Voltage/Current sensor detection. 
-WARNING: Checking for a non-existant INA219 Voltage/Current monitor will hang the system!
-An option to bypass the test it given to avaid this problem.
-
-10. BME280 Temperature, Pressure,Humidity Sensor detection.
-
-11. Azimuth Reference Sensor Detection. The test will indication if the digital line is HIGH or LOW.
+11. Lock/Reinitialize Switch Detection. The test will indication if the digital line is HIGH or LOW.
 Use a Carriage Return/Enter key to terminate the test.
 
-12. Horizon Reference Sensor Detection. The test will indication if the digital line is HIGH or LOW.
-Use a Carriage Return/Enter key to terminate the test.
+12. I2C Serial Controlled Motor Driver Board detection and Motor tests. Sketch output provides instructions on how the motors should move for this test.
 
-13. Zenith Reference Sensor Detection. The test will indication if the digital line is HIGH or LOW.
-Use a Carriage Return/Enter key to terminate the test.
+13. IR Remote Receiver functionality check.
 
-14. Lock/Reinitialize Switch Detection. The test will indication if the digital line is HIGH or LOW.
-Use a Carriage Return/Enter key to terminate the test.
-
-15. I2C Serial Controlled Motor Driver Board detection and Motor tests. Sketch output provides instructions on how the motors should move for this test.
-
-16. IR Remote Receiver functionality check.
-
-17. OLED display test. 
-WARNING: Checking for a non-existant OLED display will hang the system!
-An option to bypass the test it given to avaid this problem.
 
 Once these tests pass to your satisfaction, you are ready to proceed to the TC4_0 sketch, which is the 
 actual Telescope Controller application.

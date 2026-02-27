@@ -2,7 +2,9 @@
 
 ## Arduino SAMD51-based Telescope Controller 4.00.00
 
-#### By David Armstrong, July 2023
+### Main Repository Readme File
+
+#### By David Armstrong, December 2025
  - See MIT LICENSE file
 
 ========================================================================

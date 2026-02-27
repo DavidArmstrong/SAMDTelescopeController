@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Variables, Constants, and Basic I/O related routines
-// August 2023
+// February 2026
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -510,7 +510,7 @@ boolean getTubeTiltPresent() {
 }
 
 double getAltitude() {
-  DECAL = DECALenc.read();
+  //DECAL = DECALenc.read();
   double faltitudenow = (double)DECAL * 90.0 / (double)RDECAL;
   return faltitudenow;
 }
@@ -534,22 +534,6 @@ boolean getAzRefSensor() {
   // initialization, and alignments.
   
   return (digitalRead(AZREFsensor) == LOW);
-}
-boolean getHorizonRefSensor() {
-  // Return true if Altitude Horizon Sensor, which is a Hall Effect Sensor, (Non-Latching)
-  // is detecting the magnet mounted in the side board of the telescope.
-  // This provides a fixed reference point for all Altitude measurements,
-  // initialization, and alignments -- IF the tilt inclinometer is not present!
-  
-  return (digitalRead(HORIZONlim) == LOW);
-}
-boolean getZenithRefSensor() {
-  // Return true if Altitude Zenith Sensor, which is a Hall Effect Sensor, (Non-Latching)
-  // is detecting the magnet mounted in the side board of the telescope.
-  // This provides a fixed reference point for all Altitude measurements,
-  // initialization, and alignments -- IF the tilt inclinometer is not present!
-  
-  return (digitalRead(ZENITHlim) == LOW);
 }
 
 boolean startMotorToTarget(int motor, int direction, unsigned long currentPosition, unsigned long targetPosition) {

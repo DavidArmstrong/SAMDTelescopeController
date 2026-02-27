@@ -1,5 +1,5 @@
 /* Telescope Controller 4.00.00 - Header file
-// August 2023
+// February 2026
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -16,8 +16,8 @@ const char tcversion[] = "4.00.00";
 // D4 = Serial2 Rx - from XBee (Yellow wire on my cable) (SAMD51)
 // Pins used for optional Reference sensors */
 
-const int HORIZONlim = 5; // D5 - Altitude axis Horizon reference point
-const int ZENITHlim = 6; // D6 - Altitude axis Zenith point
+//const int HORIZONlim = 5; // D5 - Altitude axis Horizon reference point
+//const int ZENITHlim = 6; // D6 - Altitude axis Zenith point
 // D7 = Serial2 Tx - to XBee (Green wire on my cable) (SAMD51) */
 const int AZREFsensor = 8; /* D8 - Azimuth axis reference point */
 
@@ -55,17 +55,12 @@ const int LOCKBTN = 19; /* A5 */
 // D32-34 = Secondary SPI
 // D35 - Secondary SPI cs
 
-//The OLED library assumes a reset pin is necessary.
-//The Qwiic OLED has RST hard-wired, so pick an IO pin that is not being used */
-const int PIN_RESET = 40; //This is for the Neo-Pixel LED, which isn't used
-
 /*==========================================================================
   // I2C Addresses used
   // I2C HMC6343 Magnetic Compass (IIC address 0x19) (Not used nor referenced)
   // I2C MMC5983MA Magnetic Compass (IIC address 0x30)
   // I2C HMC6352 Magnetic Compass (IIC address 0x21, 0x41, 0x53, 0x57)
-  // I2C OLED display (IIC address 0x3c)
-  // I2C Voltage/Current sensor (IIC address 0x40)
+  // I2C HMC6343 Magnetic Compass (IIC address 0x32, 0x33)
   // I2C GPS receiver module (IIC address 0x42)
   // IIC address of EEPROM - 24LC256 or 24C512C-L */
 //const int EEPROM_ADR = 0x55;
@@ -75,9 +70,6 @@ const int MotorDriver_ADR = 0x5D; //Qwiic Motor Driver
 const int LCDi2c_ADR = 0x72; //Default for Sparkfun OpenLCD
 // BME280 Temperature, Barometric Pressure, Relative Humidity Sensoe I2C address
 const int BME280_ADR = 0x77;
-/* This OLED definition needed - The DC_JUMPER is the I2C Address Select jumper.
-  // Set to 1 if the jumper is open (Default), or set to 0 if it's closed. */
-#define DC_JUMPER 1
 
 /*=======================================================================================
 // Libraries!  This is why I use Arduino, seriously.
@@ -105,11 +97,8 @@ const int BME280_ADR = 0x77;
 
 #include "extEEPROM.h" // I2C EEPROM https://github.com/PaoloP74/extEEPROM
 #include <SerLCD.h> //Serial LCD library: https://github.com/sparkfun/SparkFun_SerLCD_Arduino_Library
-#include <SFE_MicroOLED.h>  // SFE_MicroOLED library https://github.com/sparkfun/SparkFun_Micro_OLED_Arduino_Library
 #include "ansi.h" // VT100 support https://github.com/RobTillaart/ANSI
 #include <SparkFun_u-blox_GNSS_Arduino_Library.h> //Click here to get the library: https://github.com/sparkfun/SparkFun_u-blox_GNSS_Arduino_Library
-
-#include <Adafruit_INA219.h> //Power/current/voltage monitor https://github.com/adafruit/Adafruit_INA219
 #include "SparkFunBME280.h" //Temperature, Pressure, Humidity sensor https://github.com/sparkfun/SparkFun_BME280_Arduino_Library
 
 #include <IRLibDecodeBase.h> // First include the decode base https://github.com/cyborg5/IRLib2 
@@ -131,7 +120,9 @@ const int BME280_ADR = 0x77;
 #ifdef __HMC6352__
 #include <HMC6352.h> // https://github.com/funflin/HMC6352-Arduino-Library
 #endif
-//#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
+#ifdef __HMC6343__
+#include "SFE_HMC6343.h" // https://github.com/sparkfun/SparkFun_HMC6343_Arduino_Library
+#endif
 #include <SparkFun_MMC5983MA_Arduino_Library.h> //Click here to get the library: http://librarymanager/All#SparkFun_MMC5983MA
 // https://github.com/sparkfun/SparkFun_MMC5983MA_Magnetometer_Arduino_Library
 
@@ -176,7 +167,6 @@ struct EEstruct {
   boolean PFLAG;  // Precession flag
   boolean RFLAG;  // True if Refraction calculations enabled
   boolean MotorDriverflag;
-  boolean OLEDflag; // OLED display used?
   boolean LCDserialflag; // PIC-based LCD display used?
   boolean LCDavrflag; // OpenLCD I2C display used?
   //Note: if both LCDserialflag and LCDavrflag are true, then an OpenLCD device is on TC_LCD
@@ -185,7 +175,7 @@ struct EEstruct {
   boolean INA219flag; // INA219 I2C voltage monior used?
   char SiteID[40];
   boolean SerialTermflag; // Serial Terminal output Updated regularly?
-  boolean AzRangeMeasured, AlRangeMeasured;
+  boolean AzRangeMeasured;
   boolean enableRealHwInit;
 };
 
@@ -284,7 +274,6 @@ double FHUMID; // Percent relative humidity
 double FPINHG;  // Barometric Pressure in Inches of Mercury
 double FELAT;  // Equatorial Mount Latitude
 double FMAGHDG; // Magnetic Compass heading
-float busvolts, current_mA; // Bus voltage, current as measured by INA219
 float magVariation; // Magnetic Declination or Variation
 long magVariationInAzimuthCounts;
 long AzimuthMagneticEncoderOffset;
@@ -333,21 +322,14 @@ Encoder RAAZenc( RAAZ_pinA , RAAZ_pinB ); //Incremental Quadrature Encoder for R
 #else
 Encoder RAAZenc( RAAZ_pinB , RAAZ_pinA ); //Incremental Quadrature Encoder for RA/Aximuth
 #endif
-#ifndef SWAP_ALTITUDE_ENCODER_AB
-Encoder DECALenc( DECAL_pinA , DECAL_pinB ); //Incremental Quadrature Encoder for Dec/Altitude
-#else
-Encoder DECALenc( DECAL_pinB , DECAL_pinA ); //Incremental Quadrature Encoder for Dec/Altitude
-#endif
 
 // Now declare an instance of that decoder.
 IRdecode irdecoder;
 IRrecv irrecv(RECV_PIN);  //pin number for the receiver
 RTC_SAMD51 rtczero;
 
-MicroOLED oled(PIN_RESET, DC_JUMPER);    // I2C declaration
 BME280 bme280; //Temperature, Barometric Pressure, Humidity Sensor
 SFE_UBLOX_GNSS ubloxGPS;
-Adafruit_INA219 ina219; // Bus voltage monitor
 boolean I2CEEPROMpresent, GPSpresent, BMEpresent;
 SiderealPlanets myAstro;
 SiderealObjects myObjects;
@@ -355,15 +337,17 @@ boolean MotorDriverflag;
 SCMD i2cMotorDriver; //Serial Controlled Motor Driver
 
 boolean MagCompasspresent;
-//boolean HMC6343MagCompasspresent;
+boolean HMC6343MagCompasspresent;
 boolean MMC5983MAMagCompasspresent;
-//SFE_HMC6343 dobHMC6343; // Declare the compass object
+#ifdef __HMC6343__
+SFE_HMC6343 dobHMC6343; // Declare the compass object
+#endif
 SFE_MMC5983MA MMC5983MAmag;
 WMM_Tinier myDeclination;
 SCL3300 rockerTilt, tubeTilt; // inclinometers
 boolean rockerTiltPresent, tubeTiltPresent;
 ANSI ansi(&TCterminal); // VT100 support
-boolean AzimuthEncoderInitialized, AltitudeEncoderInitialized;
+boolean AzimuthEncoderInitialized;
 int currentAzMtrSpeed, currentAlMtrSpeed;
 int currentAzMtrDir, currentAlMtrDir;
 unsigned long AzPreviousMillis, AlPreviousMillis;
@@ -431,6 +415,9 @@ boolean CHKNUM();
 #ifdef __HMC6352__
 boolean getMagCompassPresent(void);
 #endif
+#ifdef __HMC6343__
+boolean get6343MagCompassPresent(void);
+#endif
 float magneticDeclination(float Latitude, float Longitude, uint8_t year, uint8_t month, uint8_t day);
 float getMagCompassHeading(void);
 double getMMC5983MagCompassHeading(void);
@@ -439,8 +426,6 @@ boolean getTubeTiltPresent(void);
 double getAltitude(void);
 double getAzimuth(void);
 boolean getAzRefSensor();
-boolean getHorizonRefSensor();
-boolean getZenithRefSensor();
 boolean startMotorToTarget(int motor, int direction, unsigned long currentPosition, unsigned long targetPosition);
 boolean driveMotor(int motor, int direction, int speed);
 boolean driveMotorStop(int motor);
@@ -464,7 +449,6 @@ double GETFDECNUM();
 double GETFDECNUM(float n);
 
 // TCUSERIO
-void oledprintData();
 void printstatusscreen();
 void showDate();
 void showDateLCD();
@@ -486,12 +470,7 @@ void rockertiltlevelcheck();
 void gotoAzRef();
 void measureAZrange();
 void getMagneticNorth();
-void printGoAboveHorizon();
-void printGoToHorizon();
-void setAlEncoderAtHorizon();
-void measureALrangeByLimits();
-double getTubeTiltX() ;
-void measureALrangeByInclinometer();
+double getTubeTiltX();
 void inithardware();
 void STRTturboCLK();
 void INITZONE();
