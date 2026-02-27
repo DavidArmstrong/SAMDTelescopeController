@@ -76,13 +76,6 @@ void printTimeLCD(double n) {
   print2digitsLCD(abs(secs)); LCDprint(" ");
 }
 
-void print2digits(int number) {
-  if (number < 10) {
-    oled.print("0"); // print a 0 before if the number is < than 10
-  }
-  oled.print(number);
-}
-
 void print2digitsUSB(int number) {
   if (number < 10) {
     TCterminal.print("0");
@@ -91,14 +84,14 @@ void print2digitsUSB(int number) {
 }
 
 void print2digitsLCD(int number) {
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     if (number < 10) {
       Wire.print("0");
     }
     Wire.print(number);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     if (number < 10) {
       TC_LCD.print("0");
     }

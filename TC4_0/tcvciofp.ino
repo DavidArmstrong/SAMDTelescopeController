@@ -1,5 +1,5 @@
-/* Telescope Controller 4.00.00 - Variables, Constants, Basic I/O, and Floating Point related routines
-// September 2022
+/* Telescope Controller 4.00.00 - Variables, Constants, and Basic I/O related routines
+// February 2026
 // See MIT LICENSE.md file and ReadMe.md file for essential information
 // Highly tailored to the AdaFruit M4 Metro
 // DO NOT ATTEMPT TO LOAD THIS ONTO A STANDARD UNO */
@@ -61,117 +61,181 @@ long GETnum(char* buf) { //convert string to long number
 }
 
 void LCDline1() { // move cursor to beginning of first line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128); //Change the position (128) of the cursor to 1st row (0), position 0
   }
 }
 void LCDline2() { // move cursor to beginning of second line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 64); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 64); //Change the position (128) of the cursor to 2nd row (64), position 0
   }
 }
 void LCDline3() { // move cursor to beginning of third line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 20); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 20); //Change the position (128) of the cursor to 3rd row (20), position 0
   }
 }
 void LCDline4() { // move cursor to beginning of fourth line
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write(254); //Send command character
     Wire.write(128 + 84); //Change the position (128) of the cursor
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.write(254); //Send command character
     TC_LCD.write(128 + 84); //Change the position (128) of the cursor to 4th row (84), position 0 (0)
   }
 }
 void LCDclear() { // Clear display and home cursor
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
     // OpenLCD (AVR) based LCD on QWIIC I2C bus
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.write('|'); //Put LCD into setting mode
     Wire.write('-'); //Send clear display command
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag && !eecharbuf.strunion.LCDi2cflag) {
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
     // PIC based LCD on TC_LCD TxD line
     TC_LCD.write(0xfe); // = 254 decimal
     TC_LCD.write(0x01);
-  } else if (eecharbuf.strunion.LCDi2cflag && eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
     // OpenLCD on TC_LCD TXD line
     TC_LCD.write('|'); //Send setting character = 124 = 0x7c
     TC_LCD.write('-'); //Send clear display character
   }
 }
+void LCDbrighter() {
+  int tmp = eecharbuf.strunion.LCDbrightness++;
+  int clear = 0x0;
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
+    // OpenLCD (AVR) based LCD on QWIIC I2C bus
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    Wire.beginTransmission(LCDi2c_ADR);
+    Wire.write('|'); //Put LCD into setting mode
+    Wire.write('+'); //Send RGB display command
+    Wire.write(tmp); //Red
+    Wire.write(clear); //Green
+    Wire.write(clear); //Blue
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
+    // PIC based LCD on TC_LCD TxD line
+    if (tmp < 0x80) tmp = 0x80;
+    if (tmp > 0x9d) tmp = 0x9d;
+    TC_LCD.write(0x7c); // =  decimal
+    TC_LCD.write(tmp);
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
+    // OpenLCD on TC_LCD TXD line
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    TC_LCD.write('|'); //Send setting character = 124 = 0x7c
+    TC_LCD.write('+'); //Send RGB display character
+    TC_LCD.write(tmp); //Red
+    TC_LCD.write(clear); //Green
+    TC_LCD.write(clear); //Blue
+  }
+  eecharbuf.strunion.LCDbrightness = tmp;
+}
+void LCDdimmer() {
+  int tmp = eecharbuf.strunion.LCDbrightness--;
+  int clear = 0x0;
+  if (eecharbuf.strunion.LCDavrflag && !eecharbuf.strunion.LCDserialflag) {
+    // OpenLCD (AVR) based LCD on QWIIC I2C bus
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    Wire.beginTransmission(LCDi2c_ADR);
+    Wire.write('|'); //Put LCD into setting mode
+    Wire.write('+'); //Send RGB display command
+    Wire.write(tmp); //Red
+    Wire.write(clear); //Green
+    Wire.write(clear); //Blue
+    Wire.endTransmission();
+  } else if (eecharbuf.strunion.LCDserialflag && !eecharbuf.strunion.LCDavrflag) {
+    // PIC based LCD on TC_LCD TxD line
+    if (tmp < 0x80) tmp = 0x80;
+    if (tmp > 0x9d) tmp = 0x9d;
+    TC_LCD.write(0x7c); // =  decimal
+    TC_LCD.write(tmp);
+  } else if (eecharbuf.strunion.LCDavrflag && eecharbuf.strunion.LCDserialflag) {
+    // OpenLCD on TC_LCD TXD line
+    if (tmp < 0x0) tmp = 0x0;
+    if (tmp > 0xff) tmp = 0xff;
+    TC_LCD.write('|'); //Send setting character = 124 = 0x7c
+    TC_LCD.write('+'); //Send RGB display character
+    TC_LCD.write(tmp); //Red
+    TC_LCD.write(clear); //Green
+    TC_LCD.write(clear); //Blue
+  }
+  eecharbuf.strunion.LCDbrightness = tmp;
+}
 void LCDprint(int tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(long tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag && !eecharbuf.strunion.LCDpicflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(double tmp, int frac) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp, 2);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp, frac);
   }
 }
 void LCDprint(char tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(char* tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
 void LCDprint(const char* tmp) { // Print to LCD
-  if (eecharbuf.strunion.LCDi2cflag) {
+  if (eecharbuf.strunion.LCDavrflag) {
     Wire.beginTransmission(LCDi2c_ADR);
     Wire.print(tmp);
     Wire.endTransmission();
-  } else if (eecharbuf.strunion.LCDpicflag) {
+  } else if (eecharbuf.strunion.LCDserialflag) {
     TC_LCD.print(tmp);
   }
 }
@@ -226,6 +290,15 @@ void RESETdisplayFLAG() {
 }
 boolean Displayquestion() {
   return !displayFLAG;
+}
+void SETPIDFLAG() {
+  PIDFLAG = true;
+}
+void RESETPIDFLAG() {
+  PIDFLAG = false;
+}
+boolean PIDquestion() {
+  return !PIDFLAG;
 }
 void SETERRFLAG() {
   ERRFLAG = true;
@@ -295,7 +368,8 @@ void TERMcursor() {
 void TERMxy(int x, int y) {
   newdelay(20); // Serialx has a small Tx buffer
   // Position cursor on VT100 screen at coordinates x,y
-  ansi.gotoXY(y, x);
+  //ansi.gotoXY(y, x);
+  ansi.gotoXY(x, y); // Change for ANSI 2.0 library
 }
 void TERMtextcolor( char buf ) {
   //Set foreground text color on vt100 terminal screen
@@ -316,6 +390,7 @@ void TERMtextcolor( char buf ) {
 }
 
 void WAITASEC(int n) {
+  if (n < 1) return;
   // Wait until the next second tick
   DateTime now = rtczero.now();
   long initialTime = now.second();
@@ -435,11 +510,12 @@ boolean getTubeTiltPresent() {
 }
 
 double getAltitude() {
-  DECAL = DECALenc.read();
+  //DECAL = DECALenc.read();
   double faltitudenow = (double)DECAL * 90.0 / (double)RDECAL;
   return faltitudenow;
 }
 double getAzimuth() {
+  // Return Azimuth degrees
   //TcRAAZ = (TRA * (double)RRAAZ / 360.) - AzimuthMagneticEncoderOffset - magVariationInAzimuthCounts;
   RAAZ = RAAZenc.read();
   double fazimuthnow = 0.;
@@ -459,40 +535,50 @@ boolean getAzRefSensor() {
   
   return (digitalRead(AZREFsensor) == LOW);
 }
-boolean getHorizonRefSensor() {
-  // Return true if Altitude Horizon Sensor, which is a Hall Effect Sensor, (Non-Latching)
-  // is detecting the magnet mounted in the side board of the telescope.
-  // This provides a fixed reference point for all Altitude measurements,
-  // initialization, and alignments -- IF the tilt inclinometer is not present!
-  
-  return (digitalRead(HORIZONlim) == LOW);
-}
-boolean getZenithRefSensor() {
-  // Return true if Altitude Zenith Sensor, which is a Hall Effect Sensor, (Non-Latching)
-  // is detecting the magnet mounted in the side board of the telescope.
-  // This provides a fixed reference point for all Altitude measurements,
-  // initialization, and alignments -- IF the tilt inclinometer is not present!
-  
-  return (digitalRead(ZENITHlim) == LOW);
-}
 
-boolean startMotorToTarget(int motor, int direction, long currentPosition, long targetPosition) {
+boolean startMotorToTarget(int motor, int direction, unsigned long currentPosition, unsigned long targetPosition) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.
   // uses i2cMotorDriver.setDrive( motorNum, direction, level ) to drive the motor
-  int currentSpeed = 0;
-  int currentDir = 0;
-  int speed = 0;
+  int currentSpeed, currentDir, speed;
+  unsigned long previousMillis = 0L;
+  float Kp, Ki, Kd, error[3], N, tau;
+  float d0, d1, fd0, fd1;
+  float maxRange;
   if ( (motor != ALTITUDE_MOTOR) && (motor != AZIMUTH_MOTOR) ) return false;
   if ( (direction != CW_DIRECTION) && (direction != CCW_DIRECTION) ) return false;
-  //if ( (speed < 0) || (speed > 255) ) return false;
-  if (motor == ALTITUDE_MOTOR) {
-    currentSpeed = currentAlMtrSpeed;
-    currentDir = currentAlMtrDir;
-  }
+
   if (motor == AZIMUTH_MOTOR) {
     currentSpeed = currentAzMtrSpeed;
     currentDir = currentAzMtrDir;
+	maxRange = RRAAZ;
+	previousMillis = AzPreviousMillis;
+	Kp = azKp;
+	Ki = azKi;
+	Kd = azKd;
+	for (int i = 0; i < 3; i++) error[i] = azError[i];
+	N = azN;
+	tau = azTau;
+	d0 = azD0;
+    d1 = azD1;
+	fd0 = azFd0;
+	fd1 = azFd1;
+  }
+  if (motor == ALTITUDE_MOTOR) {
+    currentSpeed = currentAlMtrSpeed;
+    currentDir = currentAlMtrDir;
+	maxRange = RDECAL;
+	previousMillis = AlPreviousMillis;
+	Kp = alKp;
+	Ki = alKi;
+	Kd = alKd;
+	for (int i = 0; i < 3; i++) error[i] = alError[i];
+	N = alN;
+	tau = alTau;
+	d0 = alD0;
+    d1 = alD1;
+	fd0 = alFd0;
+	fd1 = alFd1;
   }
   if (MotorDriverflag) {
     if (currentDir != direction) {
@@ -503,19 +589,62 @@ boolean startMotorToTarget(int motor, int direction, long currentPosition, long 
       }
       currentSpeed = 0;
     }
-    // TBD - PID here, with target check
+    // PID = See https://en.wikipedia.org/wiki/PID_controller
+	// We do this each time this is called - usually in approx. one second intervals
+	unsigned long currentMillis = millis();
+    float deltaT = (currentMillis - previousMillis) / 1000.;
+
+	// Recommended PID from Wikipedia
+	float A0 = Kp + Ki*deltaT;
+	float A1 = -Kp;
+	float output = currentSpeed / 255.;  // Usually the current value of the actuator
+	float A0d = Kd/deltaT;
+	float A1d = - 2.0*Kd/deltaT;
+	float A2d = Kd/deltaT;
+	float alpha = deltaT / (2.*tau);
+
+	// Loop section that recomputes the output value specifically for this time slot
+    error[2] = error[1];
+    error[1] = error[0];
+    error[0] = ( targetPosition - currentPosition ) / maxRange;
+    // Proportial/Integral part
+    output = output + A0 * error[0] + A1 * error[1];
+    // Filtered Derivative
+    d1 = d0;
+    d0 = A0d * error[0] + A1d * error[1] + A2d * error[2];
+    fd1 = fd0;
+    fd0 = ((alpha) / (alpha + 1)) * (d0 + d1) - ((alpha - 1) / (alpha + 1)) * fd1;
+    output = output + fd0;
+	
+	// Use output value to determine speed to set
+	speed = abs(output * 255.);
+	if (speed > 255) speed = 255;
     i2cMotorDriver.setDrive( motor, direction, speed );
+	
+	if (motor == AZIMUTH_MOTOR) {
+      currentAzMtrSpeed = speed;
+      currentAzMtrDir = direction;
+	  AzPreviousMillis = currentMillis;
+	  for (int i = 0; i < 3; i++) azError[i] = error[i];
+	  azD0 = d0;
+	  azD1 = d1;
+	  azFd0 = fd0;
+	  azFd1 = fd1;
+    }
     if (motor == ALTITUDE_MOTOR) {
       currentAlMtrSpeed = speed;
       currentAlMtrDir = direction;
-    }
-    if (motor == AZIMUTH_MOTOR) {
-      currentAzMtrSpeed = speed;
-      currentAzMtrDir = direction;
+	  AlPreviousMillis = currentMillis;
+	  for (int i = 0; i < 3; i++) alError[i] = error[i];
+	  alD0 = d0;
+	  alD1 = d1;
+	  alFd0 = fd0;
+	  alFd1 = fd1;
     }
   }
   return true;
 }
+
 boolean driveMotor(int motor, int direction, int speed) {
   // We define here the routine to drive the Azimuth or Altitude motors.
   // So if any changes need to be made, it only has to be done here, not everywhere.
